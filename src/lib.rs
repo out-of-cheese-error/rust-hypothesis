@@ -16,6 +16,8 @@ fn is_default<T: Default + PartialEq>(t: &T) -> bool {
 
 /// Hypothesis API client
 pub struct Hypothesis {
+    pub username: String,
+    /// "acct:<username>@hypothes.is"
     pub user: String,
     pub client: reqwest::blocking::Client,
 }
@@ -45,6 +47,10 @@ impl Hypothesis {
         let client = reqwest::blocking::Client::builder()
             .default_headers(headers)
             .build()?;
-        Ok(Self { user, client })
+        Ok(Self {
+            username: username.into(),
+            user,
+            client,
+        })
     }
 }
