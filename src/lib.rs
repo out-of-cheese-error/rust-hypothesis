@@ -1,0 +1,50 @@
+pub mod annotations;
+pub mod groups;
+pub mod profile;
+pub mod users;
+
+use reqwest::header;
+
+pub const API_URL: &str = "https://api.hypothes.is/api";
+pub type GroupID = String;
+pub type AnnotationID = String;
+pub type UserAccountID = String;
+
+fn is_default<T: Default + PartialEq>(t: &T) -> bool {
+    t == &T::default()
+}
+
+/// Hypothesis API client
+pub struct Hypothesis {
+    pub user: String,
+    pub client: reqwest::blocking::Client,
+}
+
+impl Hypothesis {
+    /// Make a new Hypothesis client with your username and developer key
+    /// (see [here](https://h.readthedocs.io/en/latest/api/authorization/) on how to get one)
+    /// # Example
+    /// ```
+    /// # fn main() -> color_eyre::Result<()> {
+    ///     use hypothesis::Hypothesis;
+    /// #     dotenv::dotenv()?;
+    /// #     let username = dotenv::var("USERNAME")?;
+    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
+    ///     let api = Hypothesis::new(&username, &developer_key)?;
+    /// #     Ok(())
+    /// # }
+    /// ```
+    pub fn new(username: &str, developer_key: &str) -> color_eyre::Result<Self> {
+        let user = format!("acct:{}@hypothes.is", username);
+        let mut headers = header::HeaderMap::new();
+        headers.insert(
+            header::AUTHORIZATION,
+            header::HeaderValue::from_str(&format!("Bearer {}", developer_key))?,
+        );
+        let client = reqwest::blocking::Client::builder()
+            .default_headers(headers)
+            .build()?;
+        Ok(Self { user, client })
+    }
+}
