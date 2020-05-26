@@ -5,7 +5,7 @@ Based on the [Hypothesis API (1.0.0)](https://h.readthedocs.io/en/latest/api-ref
 
 Progress:
 - [X] Annotations
-- [ ] Groups
+- [X] Groups
 - [ ] User
 - [ ] Profile
 
