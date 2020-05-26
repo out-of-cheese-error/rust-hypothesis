@@ -1,7 +1,6 @@
 pub mod annotations;
 pub mod groups;
 pub mod profile;
-pub mod users;
 
 use reqwest::header;
 
@@ -16,6 +15,7 @@ fn is_default<T: Default + PartialEq>(t: &T) -> bool {
 
 /// Hypothesis API client
 pub struct Hypothesis {
+    /// Authenticated user
     pub username: String,
     /// "acct:<username>@hypothes.is"
     pub user: String,
