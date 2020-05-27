@@ -8,7 +8,7 @@ repository = "https://github.com/out-of-cheese-error/rust-hypothesis"
 readme = "README.md"
 license = "MIT"
 keywords = ["hypothesis", "annotation", "api"]
-
+categories = ["API bindings"]
 
 [dependencies]
 reqwest = {version="0.10.4", features=["json", "blocking"]}
