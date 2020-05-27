@@ -18,8 +18,8 @@ pub struct Hypothesis {
     /// Authenticated user
     pub username: String,
     /// "acct:<username>@hypothes.is"
-    pub user: String,
-    pub client: reqwest::blocking::Client,
+    pub user: UserAccountID,
+    client: reqwest::blocking::Client,
 }
 
 impl Hypothesis {

@@ -181,6 +181,7 @@ impl Hypothesis {
     }
 }
 
+/// Which field to expand
 #[derive(Serialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Expand {
@@ -217,17 +218,20 @@ pub struct Scope {
     pub uri_patterns: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Type {
     Private,
     Open,
     Restricted,
 }
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum Organization {
+    /// Unexpanded = Unique organization ID
     String(String),
+    /// Expanded (None if not authorized)
     Organization(Option<Org>),
 }
 
