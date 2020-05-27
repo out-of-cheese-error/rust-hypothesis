@@ -8,11 +8,6 @@ It includes helper functions for all APIKey authorized endpoints related to
 * groups (create / update / list / fetch / leave / members) 
 * profile (user information / groups)
 
-## Installation
-```bash
-cargo install hypothesis
-```
-
 ## Getting Started
 ### Authorization
 You'll need a [Hypothesis](https://hypothes.is) account, and a personal API token obtained as described [here](https://h.readthedocs.io/en/latest/api/authorization/). 
