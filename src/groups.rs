@@ -1,4 +1,6 @@
-use crate::{is_default, GroupID, Hypothesis, API_URL};
+use crate::{is_default, APIError, GroupID, Hypothesis, API_URL};
+use color_eyre::Help;
+use eyre::WrapErr;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -33,7 +35,11 @@ impl Hypothesis {
                 .map(|(k, v)| (k, v.to_string().replace('"', "")))
                 .collect::<Vec<_>>(),
         )?;
-        Ok(self.client.get(url).send()?.json()?)
+        let text = self.client.get(url).send()?.text()?;
+        let result = serde_json::from_str::<Vec<Group>>(&text)
+            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
+            .suggestion("Make sure GroupFilters is valid");
+        Ok(result?)
     }
 
     /// Create a new, private group for the currently-authenticated user.
@@ -58,12 +64,16 @@ impl Hypothesis {
         if let Some(description) = description {
             params.insert("description", description);
         }
-        Ok(self
+        let text = self
             .client
             .post(&format!("{}/groups", API_URL))
             .json(&params)
             .send()?
-            .json()?)
+            .text()?;
+        let result = serde_json::from_str::<Group>(&text)
+            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
+            .suggestion("OutOfCheeseError: Redo from start.");
+        Ok(result?)
     }
 
     /// Fetch a single Group resource.
@@ -99,12 +109,16 @@ impl Hypothesis {
         } else {
             HashMap::new()
         };
-        Ok(self
+        let text = self
             .client
             .get(&format!("{}/groups/{}", API_URL, id))
             .json(&params)
             .send()?
-            .json()?)
+            .text()?;
+        let result = serde_json::from_str::<Group>(&text)
+            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
+            .suggestion("Make sure the given GroupId exists");
+        Ok(result?)
     }
 
     /// Update a Group resource.
@@ -138,12 +152,16 @@ impl Hypothesis {
         if let Some(description) = description {
             params.push(("description", description));
         }
-        Ok(self
+        let text = self
             .client
             .patch(&format!("{}/groups/{}", API_URL, id))
             .form(&params)
             .send()?
-            .json()?)
+            .text()?;
+        let result = serde_json::from_str::<Group>(&text)
+            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
+            .suggestion("Make sure the given GroupID exists");
+        Ok(result?)
     }
 
     /// Fetch a list of all members (users) in a group. Returned user resource only contains public-facing user data.
@@ -165,19 +183,30 @@ impl Hypothesis {
     /// # }
     /// ```
     pub fn get_group_members(&self, id: &GroupID) -> color_eyre::Result<Vec<GroupMember>> {
-        Ok(self
+        let text = self
             .client
             .get(&format!("{}/groups/{}/members", API_URL, id))
             .send()?
-            .json()?)
+            .text()?;
+        let result = serde_json::from_str::<Vec<GroupMember>>(&text)
+            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
+            .suggestion("Make sure the given GroupID exists");
+        Ok(result?)
     }
 
     /// Remove yourself from a group.
     pub fn leave_group(&self, id: &GroupID) -> color_eyre::Result<()> {
-        self.client
+        let text = self
+            .client
             .delete(&format!("{}/groups/{}/members/me", API_URL, id))
-            .send()?;
-        Ok(())
+            .send()?
+            .text()?;
+        let error = serde_json::from_str::<APIError>(&text);
+        if let Ok(error) = error {
+            Err(error).suggestion("Make sure the given GroupID exists")
+        } else {
+            Ok(())
+        }
     }
 }
 

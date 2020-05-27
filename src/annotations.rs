@@ -1,6 +1,8 @@
-use crate::{is_default, AnnotationID, GroupID, Hypothesis, UserAccountID, API_URL};
+use crate::{is_default, APIError, AnnotationID, GroupID, Hypothesis, UserAccountID, API_URL};
 
 use chrono::{DateTime, Utc};
+use color_eyre::Help;
+use eyre::WrapErr;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -38,12 +40,16 @@ impl Hypothesis {
         &self,
         annotation: &AnnotationMaker,
     ) -> color_eyre::Result<Annotation> {
-        Ok(self
+        let text = self
             .client
             .post(&format!("{}/annotations", API_URL))
             .json(annotation)
             .send()?
-            .json()?)
+            .text()?;
+        let result = serde_json::from_str::<Annotation>(&text)
+            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
+            .suggestion("Make sure the AnnotationMaker is valid");
+        Ok(result?)
     }
 
     /// Update an existing annotation
@@ -84,12 +90,16 @@ impl Hypothesis {
         id: &AnnotationID,
         annotation: &AnnotationMaker,
     ) -> color_eyre::Result<Annotation> {
-        Ok(self
+        let text = self
             .client
             .patch(&format!("{}/annotations/{}", API_URL, id))
             .json(&annotation)
             .send()?
-            .json()?)
+            .text()?;
+        let result = serde_json::from_str::<Annotation>(&text)
+            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or(APIError::default()))
+            .suggestion("Make sure the AnnotationMaker is valid");
+        Ok(result?)
     }
 
     /// Search for annotations with optional filters
@@ -128,7 +138,11 @@ impl Hypothesis {
                 .map(|(k, v)| (k, v.to_string().replace('"', "")))
                 .collect::<Vec<_>>(),
         )?;
-        Ok(self.client.get(url).send()?.json::<SearchResult>()?.rows)
+        let text = self.client.get(url).send()?.text()?;
+        let result = serde_json::from_str::<SearchResult>(&text)
+            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
+            .suggestion("Make sure the SearchQuery is valid");
+        Ok(result?.rows)
     }
 
     /// Fetch annotation by ID
@@ -157,11 +171,15 @@ impl Hypothesis {
     /// # }
     /// ```
     pub fn fetch_annotation(&self, id: &AnnotationID) -> color_eyre::Result<Annotation> {
-        Ok(self
+        let text = self
             .client
             .get(&format!("{}/annotations/{}", API_URL, id))
             .send()?
-            .json()?)
+            .text()?;
+        let result = serde_json::from_str::<Annotation>(&text)
+            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
+            .suggestion("Make sure the given AnnotationID exists");
+        Ok(result?)
     }
 
     /// Delete annotation by ID
@@ -190,12 +208,15 @@ impl Hypothesis {
     /// # }
     /// ```
     pub fn delete_annotation(&self, id: &AnnotationID) -> color_eyre::Result<bool> {
-        let result: DeletionResult = self
+        let text = self
             .client
             .delete(&format!("{}/annotations/{}", API_URL, id))
             .send()?
-            .json()?;
-        Ok(result.deleted)
+            .text()?;
+        let result = serde_json::from_str::<DeletionResult>(&text)
+            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
+            .suggestion("Make sure the given AnnotationID exists");
+        Ok(result?.deleted)
     }
 
     /// Flag an annotation
@@ -204,10 +225,17 @@ impl Hypothesis {
     /// annotation will be notified of the flag and can decide whether or not to hide the
     /// annotation. Note that flags persist and cannot be removed once they are set.
     pub fn flag_annotation(&self, id: &AnnotationID) -> color_eyre::Result<()> {
-        self.client
+        let text = self
+            .client
             .put(&format!("{}/annotations/{}/flag", API_URL, id))
-            .send()?;
-        Ok(())
+            .send()?
+            .text()?;
+        let error = serde_json::from_str::<APIError>(&text);
+        if let Ok(error) = error {
+            Err(error).suggestion("Make sure the given AnnotationID exists")
+        } else {
+            Ok(())
+        }
     }
 
     /// Hide an annotation
@@ -215,10 +243,17 @@ impl Hypothesis {
     /// Hide an annotation. The authenticated user needs to have the moderate permission for the
     /// group that contains the annotation — this permission is granted to the user who created the group.
     pub fn hide_annotation(&self, id: &AnnotationID) -> color_eyre::Result<()> {
-        self.client
+        let text = self
+            .client
             .put(&format!("{}/annotations/{}/hide", API_URL, id))
-            .send()?;
-        Ok(())
+            .send()?
+            .text()?;
+        let error = serde_json::from_str::<APIError>(&text);
+        if let Ok(error) = error {
+            Err(error).suggestion("Make sure the given AnnotationID exists")
+        } else {
+            Ok(())
+        }
     }
 
     /// Show an annotation
@@ -226,10 +261,17 @@ impl Hypothesis {
     /// Show/"un-hide" an annotation. The authenticated user needs to have the moderate permission
     /// for the group that contains the annotation—this permission is granted to the user who created the group.
     pub fn show_annotation(&self, id: &AnnotationID) -> color_eyre::Result<()> {
-        self.client
+        let text = self
+            .client
             .delete(&format!("{}/annotations/{}/hide", API_URL, id))
-            .send()?;
-        Ok(())
+            .send()?
+            .text()?;
+        let error = serde_json::from_str::<APIError>(&text);
+        if let Ok(error) = error {
+            Err(error).suggestion("Make sure the given AnnotationID exists")
+        } else {
+            Ok(())
+        }
     }
 }
 
