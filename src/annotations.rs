@@ -17,21 +17,21 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
-    ///     use hypothesis::annotations::AnnotationMaker;
+    /// use hypothesis::Hypothesis;
+    /// use hypothesis::annotations::AnnotationMaker;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     ///
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
-    ///     let annotation = api.create_annotation(&AnnotationMaker {
+    /// let api = Hypothesis::new(&username, &developer_key)?;
+    /// let annotation = api.create_annotation(&AnnotationMaker {
     ///                 text: "string",
     ///                 uri: "http://example.com",
     ///                 group: group_id,
     ///                 ..Default::default()
-    ///             })?;
-    ///     assert_eq!(&annotation.text, "string");
+    /// })?;
+    /// assert_eq!(&annotation.text, "string");
     /// #    api.delete_annotation(&annotation.id)?;
     /// #    Ok(())
     /// # }
@@ -60,13 +60,13 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
-    ///     use hypothesis::annotations::AnnotationMaker;
+    /// use hypothesis::Hypothesis;
+    /// use hypothesis::annotations::AnnotationMaker;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
+    /// let api = Hypothesis::new(&username, &developer_key)?;
     /// #    let annotation = api.create_annotation(&AnnotationMaker {
     /// #                 text: "string",
     /// #                 uri: "http://example.com",
@@ -74,13 +74,13 @@ impl Hypothesis {
     /// #                 ..Default::default()
     /// #             })?;
     /// #    let annotation_id = annotation.id.to_owned();    
-    ///     let updated_annotation = api.update_annotation(&annotation_id, &AnnotationMaker {
+    /// let updated_annotation = api.update_annotation(&annotation_id, &AnnotationMaker {
     ///             tags: vec!["tag1", "tag2"],
     ///             text: "New String",
     ///             ..Default::default()
-    ///         })?;
-    ///     assert_eq!(updated_annotation.id, annotation_id);
-    ///     assert_eq!(&updated_annotation.text, "New String");
+    ///  })?;
+    ///  assert_eq!(updated_annotation.id, annotation_id);
+    ///  assert_eq!(&updated_annotation.text, "New String");
     /// #    api.delete_annotation(&updated_annotation.id)?;
     /// #    Ok(())
     /// # }
@@ -110,20 +110,20 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
-    ///     use hypothesis::annotations::SearchQuery;
+    /// use hypothesis::Hypothesis;
+    /// use hypothesis::annotations::SearchQuery;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     ///     /// Search for your own annotations:
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
-    ///     let search_query = SearchQuery {
+    /// let api = Hypothesis::new(&username, &developer_key)?;
+    /// let search_query = SearchQuery {
     ///             limit: 30,
     ///             user: &api.user,
     ///             ..Default::default()
-    ///         };
-    ///      let search_results = api.search_annotations(&search_query)?;
+    /// };
+    /// let search_results = api.search_annotations(&search_query)?;
     /// #     assert!(!search_results.is_empty());
     /// #     Ok(())
     /// # }
@@ -150,13 +150,13 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
+    /// use hypothesis::Hypothesis;
     /// #    use hypothesis::annotations::AnnotationMaker;
     /// #    dotenv::dotenv()?;
     /// #    let username = dotenv::var("USERNAME")?;
     /// #    let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
+    /// let api = Hypothesis::new(&username, &developer_key)?;
     /// #    let annotation = api.create_annotation(&AnnotationMaker {
     /// #                 text: "string",
     /// #                 uri: "http://example.com",
@@ -164,8 +164,8 @@ impl Hypothesis {
     /// #                 ..Default::default()
     /// #             })?;
     /// #    let annotation_id = annotation.id.to_owned();    
-    ///     let annotation = api.fetch_annotation(&annotation_id)?;
-    ///     assert_eq!(annotation.id, annotation_id);
+    /// let annotation = api.fetch_annotation(&annotation_id)?;
+    /// assert_eq!(annotation.id, annotation_id);
     /// #    api.delete_annotation(&annotation.id)?;
     /// #    Ok(())
     /// # }
@@ -187,13 +187,13 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
+    /// use hypothesis::Hypothesis;
     /// #    use hypothesis::annotations::AnnotationMaker;
     /// #    dotenv::dotenv()?;
     /// #    let username = dotenv::var("USERNAME")?;
     /// #    let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
+    /// let api = Hypothesis::new(&username, &developer_key)?;
     /// #    let annotation = api.create_annotation(&AnnotationMaker {
     /// #                 text: "string",
     /// #                 uri: "http://example.com",
@@ -201,9 +201,9 @@ impl Hypothesis {
     /// #                 ..Default::default()
     /// #             })?;
     /// #    let annotation_id = annotation.id.to_owned();    
-    ///     let deleted = api.delete_annotation(&annotation_id)?;
-    ///     assert!(deleted);
-    ///     assert!(api.fetch_annotation(&annotation_id).is_err());
+    /// let deleted = api.delete_annotation(&annotation_id)?;
+    /// assert!(deleted);
+    /// assert!(api.fetch_annotation(&annotation_id).is_err());
     /// #    Ok(())
     /// # }
     /// ```

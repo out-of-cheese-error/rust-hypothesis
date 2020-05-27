@@ -20,7 +20,7 @@ fn is_default<T: Default + PartialEq>(t: &T) -> bool {
 pub struct Hypothesis {
     /// Authenticated user
     pub username: String,
-    /// "acct:<username>@hypothes.is"
+    /// "acct:{username}@hypothes.is"
     pub user: UserAccountID,
     client: reqwest::blocking::Client,
 }
@@ -31,12 +31,12 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
+    /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
+    /// let api = Hypothesis::new(&username, &developer_key)?;
     /// #     Ok(())
     /// # }
     /// ```

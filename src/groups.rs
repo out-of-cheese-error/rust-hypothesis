@@ -12,16 +12,16 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
-    ///     use hypothesis::groups::GroupFilters;
+    /// use hypothesis::Hypothesis;
+    /// use hypothesis::groups::GroupFilters;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     ///
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
-    ///     /// Get all Groups belonging to user
-    ///     let groups = api.get_groups(&GroupFilters::default())?;
-    ///     assert!(!groups.is_empty());
+    /// let api = Hypothesis::new(&username, &developer_key)?;
+    /// /// Get all Groups belonging to user
+    /// let groups = api.get_groups(&GroupFilters::default())?;
+    /// #    assert!(!groups.is_empty());
     /// #    Ok(())
     /// # }
     /// ```
@@ -47,14 +47,13 @@ impl Hypothesis {
     /// # Example
     /// ```no_run
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
+    /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     ///
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
-    ///     let group = api.create_group("my_group", Some("a test group"))?;
-    /// #    
+    /// let api = Hypothesis::new(&username, &developer_key)?;
+    /// let group = api.create_group("my_group", Some("a test group"))?;
     /// #    Ok(())
     /// # }
     /// ```
@@ -81,17 +80,16 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
+    /// use hypothesis::Hypothesis;
     /// use hypothesis::groups::Expand;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID")?;
     ///
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
-    ///     /// Expands organization into a struct
-    ///     let group = api.fetch_group(&group_id, vec![Expand::Organization])?;
-    /// #    
+    /// let api = Hypothesis::new(&username, &developer_key)?;
+    /// /// Expands organization into a struct
+    /// let group = api.fetch_group(&group_id, vec![Expand::Organization])?;
     /// #    Ok(())
     /// # }    
     /// ```
@@ -126,16 +124,16 @@ impl Hypothesis {
     /// # Example
     /// ```no_run
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
+    /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID")?;
     ///
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
-    ///     let group = api.update_group(&group_id, Some("new_group_name"), None)?;
-    ///     assert_eq!(&group.name, "new_group_name");
-    ///     assert_eq!(group.id, group_id);
+    /// let api = Hypothesis::new(&username, &developer_key)?;
+    /// let group = api.update_group(&group_id, Some("new_group_name"), None)?;
+    /// assert_eq!(&group.name, "new_group_name");
+    /// assert_eq!(group.id, group_id);
     /// #    Ok(())
     /// # }
     /// ```
@@ -171,14 +169,14 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
+    /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID")?;
     ///
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
-    ///     let members = api.get_group_members(&group_id)?;
+    /// let api = Hypothesis::new(&username, &developer_key)?;
+    /// let members = api.get_group_members(&group_id)?;
     /// #    Ok(())
     /// # }
     /// ```
