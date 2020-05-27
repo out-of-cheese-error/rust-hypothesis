@@ -97,7 +97,7 @@ impl Hypothesis {
             .send()?
             .text()?;
         let result = serde_json::from_str::<Annotation>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or(APIError::default()))
+            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
             .suggestion("Make sure the AnnotationMaker is valid");
         Ok(result?)
     }
@@ -483,7 +483,7 @@ pub enum Sort {
 
 impl Default for Sort {
     fn default() -> Self {
-        Sort::Updated
+        Self::Updated
     }
 }
 
@@ -496,7 +496,7 @@ pub enum Order {
 
 impl Default for Order {
     fn default() -> Self {
-        Order::Desc
+        Self::Desc
     }
 }
 

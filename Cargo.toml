@@ -3,6 +3,12 @@ name = "hypothesis"
 version = "0.1.0"
 authors = ["Ninjani"]
 edition = "2018"
+description = "a Rust wrapper for the Hypothesis API"
+repository = "https://github.com/out-of-cheese-error/rust-hypothesis"
+readme = "README.md"
+license = "MIT"
+keywords = ["hypothesis", "annotation", "api"]
+
 
 [dependencies]
 reqwest = {version="0.10.4", features=["json", "blocking"]}

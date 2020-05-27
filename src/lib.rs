@@ -58,6 +58,7 @@ impl Hypothesis {
     }
 }
 
+/// Errors returned from the Hypothesis API
 #[derive(Error, Serialize, Deserialize, Debug, Default, Clone)]
 pub struct APIError {
     pub status: String,
@@ -65,6 +66,7 @@ pub struct APIError {
 }
 
 impl fmt::Display for APIError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Status: {}\nReason: {}", self.status, self.reason)
     }
