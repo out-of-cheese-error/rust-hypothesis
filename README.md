@@ -49,4 +49,3 @@ See the [CHANGELOG](CHANGELOG.md)
 - Can't delete a group after making it, can leave it though (maybe it's the same thing?)
 - No idea what `UserProfile.preferences` and `UserProfile.features` mean.
 - CLI just dumps output as JSON, this is fine right? Fancier CLIs can build on top of this (or use the crate directly)
- 
