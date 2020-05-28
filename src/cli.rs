@@ -1,12 +1,15 @@
-#[cfg(feature = "application")]
+#[cfg(feature = "cli")]
 use crate::annotations::AnnotationMaker;
-use crate::annotations::SearchQuery;
+use crate::annotations::{Order, SearchQuery, Sort};
+use crate::errors::CLIError;
 use crate::groups::{Expand, GroupFilters};
 use crate::{AnnotationID, GroupID, Hypothesis};
 use std::io::Write;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::{fs, io};
 use structopt::clap::AppSettings;
+use structopt::clap::Shell;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -32,6 +35,12 @@ pub enum HypothesisCLI {
     Profile {
         #[structopt(subcommand)]
         cmd: ProfileCommand,
+    },
+
+    /// Generate shell completions
+    Complete {
+        #[structopt(possible_values = & Shell::variants())]
+        shell: Shell,
     },
 }
 
@@ -337,7 +346,86 @@ impl HypothesisCLI {
                     }
                 }
             },
+            HypothesisCLI::Complete { shell } => {
+                // Generates shell completions
+                HypothesisCLI::clap().gen_completions_to("hypothesis", shell, &mut io::stdout());
+            }
         }
         Ok(())
+    }
+}
+
+impl FromStr for Sort {
+    type Err = CLIError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "created" => Ok(Sort::Created),
+            "updated" => Ok(Sort::Updated),
+            "id" => Ok(Sort::Id),
+            "group" => Ok(Sort::Group),
+            "user" => Ok(Sort::User),
+            _ => Err(CLIError::ParseError {
+                name: "sort".into(),
+                types: vec![
+                    "created".into(),
+                    "updated".into(),
+                    "id".into(),
+                    "group".into(),
+                    "user".into(),
+                ],
+            }),
+        }
+    }
+}
+
+impl Sort {
+    /// A list of possible variants in `&'static str` form
+    pub fn variants() -> [&'static str; 5] {
+        ["created", "updated", "id", "group", "user"]
+    }
+}
+
+impl FromStr for Order {
+    type Err = CLIError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "desc" => Ok(Order::Desc),
+            "asc" => Ok(Order::Asc),
+            _ => Err(CLIError::ParseError {
+                name: "order".into(),
+                types: vec!["asc".into(), "desc".into()],
+            }),
+        }
+    }
+}
+
+impl Order {
+    /// A list of possible variants in `&'static str` form
+    pub fn variants() -> [&'static str; 2] {
+        ["asc", "desc"]
+    }
+}
+
+impl FromStr for Expand {
+    type Err = CLIError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "organization" => Ok(Expand::Organization),
+            "scopes" => Ok(Expand::Scopes),
+            _ => Err(CLIError::ParseError {
+                name: "expand".into(),
+                types: vec!["organization".into(), "scopes".into()],
+            }),
+        }
+    }
+}
+
+impl Expand {
+    /// A list of possible variants in `&'static str` form
+    pub fn variants() -> [&'static str; 2] {
+        ["organization", "scopes"]
     }
 }

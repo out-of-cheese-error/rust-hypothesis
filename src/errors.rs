@@ -16,7 +16,7 @@ impl fmt::Display for APIError {
     }
 }
 
-#[cfg(feature = "application")]
+#[cfg(feature = "cli")]
 /// Errors returned from the Hypothesis CLI
 #[derive(Error, Serialize, Deserialize, Debug, Clone)]
 pub enum CLIError {

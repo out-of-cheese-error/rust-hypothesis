@@ -1,4 +1,4 @@
-#![cfg(feature = "application")]
+#![cfg(feature = "cli")]
 use color_eyre::Help;
 use eyre::WrapErr;
 use hypothesis::cli::HypothesisCLI;

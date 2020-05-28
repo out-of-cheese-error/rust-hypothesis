@@ -1,14 +1,13 @@
 use crate::{is_default, AnnotationID, GroupID, Hypothesis, UserAccountID, API_URL};
 
-use crate::errors::{APIError, CLIError};
+use crate::errors::APIError;
 use chrono::{DateTime, Utc};
 use color_eyre::Help;
 use eyre::WrapErr;
 use reqwest::Url;
 use serde::{Deserialize, Serialize, Serializer};
 use std::collections::HashMap;
-use std::str::FromStr;
-#[cfg(feature = "application")]
+#[cfg(feature = "cli")]
 use structopt::StructOpt;
 
 impl Hypothesis {
@@ -142,6 +141,11 @@ impl Hypothesis {
                 .collect::<Vec<_>>(),
         )?;
         let text = self.client.get(url).send()?.text()?;
+        #[derive(Deserialize, Debug, Clone, PartialEq)]
+        struct SearchResult {
+            rows: Vec<Annotation>,
+            total: usize,
+        }
         let result = serde_json::from_str::<SearchResult>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
             .suggestion("Make sure the query is valid");
@@ -216,6 +220,11 @@ impl Hypothesis {
             .delete(&format!("{}/annotations/{}", API_URL, id))
             .send()?
             .text()?;
+        #[derive(Deserialize, Debug, Clone, PartialEq)]
+        struct DeletionResult {
+            id: AnnotationID,
+            deleted: bool,
+        }
         let result = serde_json::from_str::<DeletionResult>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
             .suggestion("Make sure the given AnnotationID exists");
@@ -278,9 +287,9 @@ impl Hypothesis {
     }
 }
 
-#[cfg_attr(feature = "application", derive(StructOpt))]
+#[cfg_attr(feature = "cli", derive(StructOpt))]
 #[cfg_attr(
-    feature = "application",
+    feature = "cli",
     structopt(
         about = "Create or update an annotation",
         long_about = "Create / update and upload an annotation to your Hypothesis"
@@ -320,15 +329,15 @@ pub struct AnnotationMaker {
     ///
     /// This is NOT the selected text on the web-page
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", structopt(default_value, long))]
     pub text: String,
     /// Tags attached to the annotation
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(long))]
+    #[cfg_attr(feature = "cli", structopt(long))]
     pub tags: Vec<String>,
     /// Further metadata about the target document
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(skip))]
+    #[cfg_attr(feature = "cli", structopt(skip))]
     pub document: Option<Document>,
     #[serde(skip_serializing_if = "is_default")]
     /// The unique identifier for the annotation's group.
@@ -336,17 +345,17 @@ pub struct AnnotationMaker {
     /// If an annotation is a reply to another
     /// annotation (see `references`), this field will be ignored —
     /// replies belong to the same group as their parent annotations.
-    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", structopt(default_value, long))]
     pub group: GroupID,
     /// Which part of the document does the annotation target?
     ///
     /// If left as default then the annotation is linked to the whole page.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(skip))]
+    #[cfg_attr(feature = "cli", structopt(skip))]
     pub target: Target,
     /// Annotation IDs for any annotations this annotation references (e.g. is a reply to)
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(long))]
+    #[cfg_attr(feature = "cli", structopt(long))]
     pub references: Vec<AnnotationID>,
 }
 
@@ -511,30 +520,6 @@ impl Default for Sort {
     }
 }
 
-impl FromStr for Sort {
-    type Err = CLIError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "created" => Ok(Sort::Created),
-            "updated" => Ok(Sort::Updated),
-            "id" => Ok(Sort::Id),
-            "group" => Ok(Sort::Group),
-            "user" => Ok(Sort::User),
-            _ => Err(CLIError::ParseError {
-                name: "sort".into(),
-                types: vec![
-                    "created".into(),
-                    "updated".into(),
-                    "id".into(),
-                    "group".into(),
-                    "user".into(),
-                ],
-            }),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Order {
@@ -548,103 +533,88 @@ impl Default for Order {
     }
 }
 
-impl FromStr for Order {
-    type Err = CLIError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "desc" => Ok(Order::Desc),
-            "asc" => Ok(Order::Asc),
-            _ => Err(CLIError::ParseError {
-                name: "order".into(),
-                types: vec!["asc".into(), "desc".into()],
-            }),
-        }
-    }
-}
-
 /// See [the Hypothesis API docs](https://h.readthedocs.io/en/latest/api-reference/v1/#tag/annotations/paths/~1search/get) for more details on using these fields
-#[cfg_attr(feature = "application", derive(StructOpt))]
+#[cfg_attr(feature = "cli", derive(StructOpt))]
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct SearchQuery {
     /// The maximum number of annotations to return.
     ///
     /// Default: 20. Range: [ 0 .. 200 ]
-    #[cfg_attr(feature = "application", structopt(default_value = "20", long))]
+    #[cfg_attr(feature = "cli", structopt(default_value = "20", long))]
     pub limit: u8,
     /// The field by which annotations should be sorted
     /// One of created, updated, id, group, user
     ///
     /// Default: updated
-    #[cfg_attr(feature = "application", structopt(default_value = "updated", long))]
+    #[cfg_attr(feature = "cli", structopt(default_value = "updated", long, possible_values = & Sort::variants()))]
     pub sort: Sort,
     /// Example: "2019-01-03T19:46:09.334Z"
     ///
     /// Define a start point for a subset (page) of annotation search results.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", structopt(default_value, long))]
     pub search_after: String,
     /// The number of initial annotations to skip in the result set.
     ///
     /// Default: 0. Range: <= 9800.
     /// search_after is more efficient.
-    #[cfg_attr(feature = "application", structopt(default_value = "0", long))]
+    #[cfg_attr(feature = "cli", structopt(default_value = "0", long))]
     pub offset: usize,
     /// The order in which the results should be sorted.
     /// One of asc, desc
     ///
     /// Default: desc
-    #[cfg_attr(feature = "application", structopt(default_value = "desc", long))]
+    #[cfg_attr(feature = "cli", structopt(default_value = "desc", long, possible_values = & Order::variants()))]
     pub order: Order,
     /// Limit the results to annotations matching the specific URI or equivalent URIs.
     ///
     /// URI can be a URL (a web page address) or a URN representing another kind of resource such
     /// as DOI (Digital Object Identifier) or a PDF fingerprint.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", structopt(default_value, long))]
     pub uri: String,
     /// Limit the results to annotations containing the given keyword (tokenized chunk) in the URI.
     /// The value must exactly match an individual URI keyword.
     ///
     #[serde(rename = "uri.parts", skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", structopt(default_value, long))]
     pub uri_parts: String,
     /// Limit the results to annotations whose URIs match the wildcard pattern.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", structopt(default_value, long))]
     pub wildcard_uri: String,
     /// Limit the results to annotations made by the specified user. (in the format `acct:<username>@<authority>`)
     #[serde(skip_serializing_if = "is_default", serialize_with = "serialize_user")]
-    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", structopt(default_value, long))]
     pub user: UserAccountID,
     /// Limit the results to annotations made in the specified group (by group ID).
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", structopt(default_value, long))]
     pub group: GroupID,
     /// Limit the results to annotations tagged with the specified value.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", structopt(default_value, long))]
     pub tag: String,
     /// Similar to tag but allows a list of multiple tags.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(long))]
+    #[cfg_attr(feature = "cli", structopt(long))]
     pub tags: Vec<String>,
     /// Limit the results to annotations who contain the indicated keyword in any of the following fields:
     /// `quote`, `tags`, `text`, `url`
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", structopt(default_value, long))]
     pub any: String,
     /// Limit the results to annotations that contain this text inside the text that was annotated.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", structopt(default_value, long))]
     pub quote: String,
     /// Returns annotations that are replies to this parent annotation ID.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", structopt(default_value, long))]
     pub references: AnnotationID,
     /// Limit the results to annotations that contain this text in their textual body.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", structopt(default_value, long))]
     pub text: String,
 }
 
@@ -676,18 +646,6 @@ impl Default for SearchQuery {
             text: "".to_string(),
         }
     }
-}
-
-#[derive(Deserialize, Debug, Clone, PartialEq)]
-struct SearchResult {
-    rows: Vec<Annotation>,
-    total: usize,
-}
-
-#[derive(Deserialize, Debug, Clone, PartialEq)]
-struct DeletionResult {
-    id: AnnotationID,
-    deleted: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
