@@ -1,3 +1,4 @@
+[![Crates.io](https://img.shields.io/crates/v/hypothesis.svg)](https://crates.io/crates/hypothesis)
 # A Rust API for [Hypothesis](https://web.hypothes.is/)
 ### Work in progress
 
