@@ -1,9 +1,12 @@
-use crate::{is_default, APIError, GroupID, Hypothesis, API_URL};
+use crate::errors::APIError;
+use crate::{is_default, GroupID, Hypothesis, API_URL};
 use color_eyre::Help;
 use eyre::WrapErr;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+#[cfg(feature = "cli")]
+use structopt::StructOpt;
 
 impl Hypothesis {
     /// Retrieve a list of applicable Groups, filtered by authority and target document (document_uri).
@@ -12,16 +15,16 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
-    ///     use hypothesis::groups::GroupFilters;
+    /// use hypothesis::Hypothesis;
+    /// use hypothesis::groups::GroupFilters;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     ///
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
-    ///     /// Get all Groups belonging to user
-    ///     let groups = api.get_groups(&GroupFilters::default())?;
-    ///     assert!(!groups.is_empty());
+    /// let api = Hypothesis::new(&username, &developer_key)?;
+    /// /// Get all Groups belonging to user
+    /// let groups = api.get_groups(&GroupFilters::default())?;
+    /// #    assert!(!groups.is_empty());
     /// #    Ok(())
     /// # }
     /// ```
@@ -38,7 +41,7 @@ impl Hypothesis {
         let text = self.client.get(url).send()?.text()?;
         let result = serde_json::from_str::<Vec<Group>>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure GroupFilters is valid");
+            .suggestion("Make sure input filters are valid");
         Ok(result?)
     }
 
@@ -47,14 +50,13 @@ impl Hypothesis {
     /// # Example
     /// ```no_run
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
+    /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     ///
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
-    ///     let group = api.create_group("my_group", Some("a test group"))?;
-    /// #    
+    /// let api = Hypothesis::new(&username, &developer_key)?;
+    /// let group = api.create_group("my_group", Some("a test group"))?;
     /// #    Ok(())
     /// # }
     /// ```
@@ -81,17 +83,16 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
+    /// use hypothesis::Hypothesis;
     /// use hypothesis::groups::Expand;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID")?;
     ///
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
-    ///     /// Expands organization into a struct
-    ///     let group = api.fetch_group(&group_id, vec![Expand::Organization])?;
-    /// #    
+    /// let api = Hypothesis::new(&username, &developer_key)?;
+    /// /// Expands organization into a struct
+    /// let group = api.fetch_group(&group_id, vec![Expand::Organization])?;
     /// #    Ok(())
     /// # }    
     /// ```
@@ -126,16 +127,16 @@ impl Hypothesis {
     /// # Example
     /// ```no_run
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
+    /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID")?;
     ///
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
-    ///     let group = api.update_group(&group_id, Some("new_group_name"), None)?;
-    ///     assert_eq!(&group.name, "new_group_name");
-    ///     assert_eq!(group.id, group_id);
+    /// let api = Hypothesis::new(&username, &developer_key)?;
+    /// let group = api.update_group(&group_id, Some("new_group_name"), None)?;
+    /// assert_eq!(&group.name, "new_group_name");
+    /// assert_eq!(group.id, group_id);
     /// #    Ok(())
     /// # }
     /// ```
@@ -171,14 +172,14 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
+    /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID")?;
     ///
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
-    ///     let members = api.get_group_members(&group_id)?;
+    /// let api = Hypothesis::new(&username, &developer_key)?;
+    /// let members = api.get_group_members(&group_id)?;
     /// #    Ok(())
     /// # }
     /// ```
@@ -219,17 +220,24 @@ pub enum Expand {
 }
 
 /// Filter groups by authority and target document
+#[cfg_attr(feature = "cli", derive(StructOpt))]
 #[derive(Serialize, Debug, Default, Clone, PartialEq)]
 pub struct GroupFilters {
-    /// Filter returned groups to this authority. For authenticated requests, the user's associated authority will supersede any provided value.
+    /// Filter returned groups to this authority.
+    /// For authenticated requests, the user's associated authority will supersede any provided value.
+    ///
     /// Default: "hypothes.is"
     #[serde(skip_serializing_if = "is_default")]
+    #[cfg_attr(feature = "cli", structopt(default_value = "hypothes.is", long))]
     pub authority: String,
     /// Only retrieve public (i.e. non-private) groups that apply to a given document URI (i.e. the target document being annotated).
     #[serde(skip_serializing_if = "is_default")]
+    #[cfg_attr(feature = "cli", structopt(default_value, long))]
     pub document_uri: String,
-    /// One or more relations to expand for a group resource
+    /// One or more relations to expand for a group resource.
+    /// Possible values: organization, scopes
     #[serde(skip_serializing_if = "is_default")]
+    #[cfg_attr(feature = "cli", structopt(long, possible_values = & Expand::variants()))]
     pub expand: Vec<Expand>,
 }
 

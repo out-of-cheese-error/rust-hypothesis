@@ -1,5 +1,6 @@
+use crate::errors::APIError;
 use crate::groups::Group;
-use crate::{APIError, Hypothesis, UserAccountID, API_URL};
+use crate::{Hypothesis, UserAccountID, API_URL};
 use color_eyre::Help;
 use eyre::WrapErr;
 use serde::{Deserialize, Serialize};
@@ -11,14 +12,14 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
+    /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
-    ///     let profile = api.fetch_user_profile()?;
-    ///     assert!(profile.userid.is_some());
-    ///     assert_eq!(profile.userid.unwrap(), api.user);
+    /// let api = Hypothesis::new(&username, &developer_key)?;
+    /// let profile = api.fetch_user_profile()?;
+    /// assert!(profile.userid.is_some());
+    /// assert_eq!(profile.userid.unwrap(), api.user);
     /// #     Ok(())
     /// # }
     /// ```
@@ -38,12 +39,12 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # fn main() -> color_eyre::Result<()> {
-    ///     use hypothesis::Hypothesis;
+    /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
-    ///     let api = Hypothesis::new(&username, &developer_key)?;
-    ///     let groups = api.fetch_user_groups()?;
+    /// let api = Hypothesis::new(&username, &developer_key)?;
+    /// let groups = api.fetch_user_groups()?;
     /// #     Ok(())
     /// # }
     /// ```
