@@ -6,6 +6,9 @@ use eyre::WrapErr;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::str::FromStr;
+#[cfg(feature = "application")]
+use structopt::StructOpt;
 
 impl Hypothesis {
     /// Create a new annotation
@@ -26,8 +29,8 @@ impl Hypothesis {
     ///
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// let annotation = api.create_annotation(&AnnotationMaker {
-    ///                 text: "string",
-    ///                 uri: "http://example.com",
+    ///                 text: "string".to_string(),
+    ///                 uri: "http://example.com".to_string(),
     ///                 group: group_id,
     ///                 ..Default::default()
     /// })?;
@@ -68,15 +71,15 @@ impl Hypothesis {
     /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// #    let annotation = api.create_annotation(&AnnotationMaker {
-    /// #                 text: "string",
-    /// #                 uri: "http://example.com",
+    /// #                 text: "string".to_string(),
+    /// #                 uri: "http://example.com".to_string(),
     /// #                 group: group_id,
     /// #                 ..Default::default()
     /// #             })?;
     /// #    let annotation_id = annotation.id.to_owned();    
     /// let updated_annotation = api.update_annotation(&annotation_id, &AnnotationMaker {
-    ///             tags: vec!["tag1", "tag2"],
-    ///             text: "New String",
+    ///             tags: vec!["tag1".to_string(), "tag2".to_string()],
+    ///             text: "New String".to_string(),
     ///             ..Default::default()
     ///  })?;
     ///  assert_eq!(updated_annotation.id, annotation_id);
@@ -120,7 +123,7 @@ impl Hypothesis {
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// let search_query = SearchQuery {
     ///             limit: 30,
-    ///             user: &api.user,
+    ///             user: api.user.clone(),
     ///             ..Default::default()
     /// };
     /// let search_results = api.search_annotations(&search_query)?;
@@ -158,8 +161,8 @@ impl Hypothesis {
     /// #    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// #    let annotation = api.create_annotation(&AnnotationMaker {
-    /// #                 text: "string",
-    /// #                 uri: "http://example.com",
+    /// #                 text: "string".to_string(),
+    /// #                 uri: "http://example.com".to_string(),
     /// #                 group: group_id,
     /// #                 ..Default::default()
     /// #             })?;
@@ -195,8 +198,8 @@ impl Hypothesis {
     /// #    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// #    let annotation = api.create_annotation(&AnnotationMaker {
-    /// #                 text: "string",
-    /// #                 uri: "http://example.com",
+    /// #                 text: "string".to_string(),
+    /// #                 uri: "http://example.com".to_string(),
     /// #                 group: group_id,
     /// #                 ..Default::default()
     /// #             })?;
@@ -275,6 +278,14 @@ impl Hypothesis {
     }
 }
 
+#[cfg_attr(feature = "application", derive(StructOpt))]
+#[cfg_attr(
+    feature = "application",
+    structopt(
+        about = "Create or update an annotation",
+        long_about = "Create / update and upload an annotation to your Hypothesis"
+    )
+)]
 /// Struct to create and update annotations
 ///
 /// For creating a new annotation, all fields except uri are optional, i.e. leave as default.
@@ -285,78 +296,91 @@ impl Hypothesis {
 /// # use hypothesis::annotations::AnnotationMaker;
 /// /// A simple annotation
 /// let annotation_simple = AnnotationMaker {
-///     uri: "https://example.com",
-///     text: "My new annotation",
+///     uri: "https://example.com".to_string(),
+///     text: "My new annotation".to_string(),
 ///     .. Default::default()
 /// };
 ///
 /// /// A complex annotation
 /// let annotation_complex = AnnotationMaker {
-///     uri: "https://wikipedia.com",
+///     uri: "https://wikipedia.com".to_string(),
 ///     
 ///     .. Default::default()
 /// };
 /// ```
 #[derive(Serialize, Debug, Default, Clone)]
-pub struct AnnotationMaker<'a> {
-    /// URL to which this annotation is attached
+pub struct AnnotationMaker {
+    /// URI that this annotation is attached to.
+    ///
+    /// Can be a URL (a web page address) or a URN representing another kind of resource such as
+    /// DOI (Digital Object Identifier) or a PDF fingerprint.
     #[serde(skip_serializing_if = "is_default")]
-    pub uri: &'a str,
+    pub uri: String,
     /// Annotation text / comment given by user
+    ///
     /// This is NOT the selected text on the web-page
     #[serde(skip_serializing_if = "is_default")]
-    pub text: &'a str,
+    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    pub text: String,
     /// Tags attached to the annotation
     #[serde(skip_serializing_if = "is_default")]
-    pub tags: Vec<&'a str>,
+    #[cfg_attr(feature = "application", structopt(default_value = "Vec::new()", long))]
+    pub tags: Vec<String>,
     /// Further metadata about the target document
     #[serde(skip_serializing_if = "is_default")]
-    pub document: Option<Document<'a>>,
+    #[cfg_attr(feature = "application", structopt(skip))]
+    pub document: Option<Document>,
     #[serde(skip_serializing_if = "is_default")]
-    /// The unique identifier for the annotation's group. If an annotation is a reply to another
-    /// annotation (see `references`), this field will be ignored — replies belong to the same group
-    /// as their parent annotations.
+    /// The unique identifier for the annotation's group.
+    ///
+    /// If an annotation is a reply to another
+    /// annotation (see `references`), this field will be ignored —
+    /// replies belong to the same group as their parent annotations.
+    #[cfg_attr(feature = "application", structopt(default_value, long))]
     pub group: GroupID,
     /// Which part of the document does the annotation target?
+    ///
     /// If left as default then the annotation is linked to the whole page.
     #[serde(skip_serializing_if = "is_default")]
+    #[cfg_attr(feature = "application", structopt(skip))]
     pub target: Target,
     /// Annotation IDs for any annotations this annotation references (e.g. is a reply to)
     #[serde(skip_serializing_if = "is_default")]
+    #[cfg_attr(feature = "application", structopt(default_value = "Vec::new()", long))]
     pub references: Vec<AnnotationID>,
 }
 
 #[derive(Serialize, Debug, Default, Clone, PartialEq)]
-pub struct Document<'a> {
+pub struct Document {
     #[serde(skip_serializing_if = "is_default")]
-    pub title: Vec<&'a str>,
+    pub title: Vec<String>,
     #[serde(skip_serializing_if = "is_default")]
-    pub dc: Option<Dc<'a>>,
+    pub dc: Option<Dc>,
     #[serde(skip_serializing_if = "is_default")]
-    pub highwire: Option<HighWire<'a>>,
+    pub highwire: Option<HighWire>,
     #[serde(skip_serializing_if = "is_default")]
-    pub link: Vec<Link<'a>>,
+    pub link: Vec<Link>,
 }
 
 #[derive(Serialize, Default, Debug, Clone, PartialEq)]
-pub struct HighWire<'a> {
+pub struct HighWire {
     #[serde(skip_serializing_if = "is_default")]
-    pub doi: Vec<&'a str>,
+    pub doi: Vec<String>,
     #[serde(skip_serializing_if = "is_default")]
-    pub pdf_url: Vec<&'a str>,
+    pub pdf_url: Vec<String>,
 }
 
 #[derive(Serialize, Debug, Default, Clone, PartialEq)]
-pub struct Link<'a> {
-    pub href: &'a str,
+pub struct Link {
+    pub href: String,
     #[serde(skip_serializing_if = "is_default", rename = "type")]
-    pub link_type: &'a str,
+    pub link_type: String,
 }
 
 #[derive(Serialize, Debug, Default, Clone, PartialEq)]
-pub struct Dc<'a> {
+pub struct Dc {
     #[serde(skip_serializing_if = "is_default")]
-    pub identifier: Vec<&'a str>,
+    pub identifier: Vec<String>,
 }
 
 /// Full representation of Annotation resource and applicable relationships.
@@ -487,6 +511,21 @@ impl Default for Sort {
     }
 }
 
+impl FromStr for Sort {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "created" => Ok(Sort::Created),
+            "updated" => Ok(Sort::Updated),
+            "id" => Ok(Sort::Id),
+            "group" => Ok(Sort::Group),
+            "user" => Ok(Sort::User),
+            _ => Err("Wrong Sort".into()),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Order {
@@ -500,89 +539,122 @@ impl Default for Order {
     }
 }
 
+impl FromStr for Order {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "desc" => Ok(Order::Desc),
+            "asc" => Ok(Order::Asc),
+            _ => Err("Wrong Order".into()),
+        }
+    }
+}
+
+/// See [the Hypothesis API docs](https://h.readthedocs.io/en/latest/api-reference/v1/#tag/annotations/paths/~1search/get) for more details on using these fields
+#[cfg_attr(feature = "application", derive(StructOpt))]
 #[derive(Serialize, Debug, Clone, PartialEq)]
-pub struct SearchQuery<'a> {
-    /// The maximum number of annotations to return. Default: 20. Range: [ 0 .. 200 ]
+pub struct SearchQuery {
+    /// The maximum number of annotations to return.
+    ///
+    /// Default: 20. Range: [ 0 .. 200 ]
+    #[cfg_attr(feature = "application", structopt(default_value = "20", long))]
     pub limit: u8,
-    /// The field by which annotations should be sorted. Default: Updated
+    /// The field by which annotations should be sorted
+    /// One of created, updated, id, group, user
+    ///
+    /// Default: updated
+    #[cfg_attr(feature = "application", structopt(default_value = "updated", long))]
     pub sort: Sort,
     /// Example: "2019-01-03T19:46:09.334Z"
     ///
     /// Define a start point for a subset (page) of annotation search results.
-    ///
-    /// Note: search_after provides an efficient, stateless paging mechanism. Its use is preferred over that of offset.
-    ///
-    /// See [the Hypothesis API docs](https://h.readthedocs.io/en/latest/api-reference/v1/#tag/annotations/paths/~1search/get) for more details on using this field
     #[serde(skip_serializing_if = "is_default")]
-    pub search_after: &'a str,
-    /// The number of initial annotations to skip in the result set. Default: 0. Range: <= 9800
-    /// May be used for pagination of result sets. The usage of search_after is preferred, especially for large batches, as it is considerably more efficient.
+    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    pub search_after: String,
+    /// The number of initial annotations to skip in the result set.
+    ///
+    /// Default: 0. Range: <= 9800.
+    /// search_after is more efficient.
+    #[cfg_attr(feature = "application", structopt(default_value = "0", long))]
     pub offset: usize,
-    /// The order in which the results should be sorted. Default: Desc
+    /// The order in which the results should be sorted.
+    /// One of asc, desc
+    ///
+    /// Default: desc
+    #[cfg_attr(feature = "application", structopt(default_value = "desc", long))]
     pub order: Order,
     /// Limit the results to annotations matching the specific URI or equivalent URIs.
     ///
-    /// URI can be a URL (a web page address) or a URN representing another kind of resource such as DOI (Digital Object Identifier) or a PDF fingerprint.
+    /// URI can be a URL (a web page address) or a URN representing another kind of resource such
+    /// as DOI (Digital Object Identifier) or a PDF fingerprint.
     #[serde(skip_serializing_if = "is_default")]
-    pub uri: &'a str,
-    /// Limit the results to annotations containing the given keyword (tokenized chunk) in the URI. The value must exactly match an individual URI keyword.
-    /// See [the Hypothesis API docs](https://h.readthedocs.io/en/latest/api-reference/v1/#tag/annotations/paths/~1search/get) for more details on using this field
+    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    pub uri: String,
+    /// Limit the results to annotations containing the given keyword (tokenized chunk) in the URI.
+    /// The value must exactly match an individual URI keyword.
+    ///
     #[serde(rename = "uri.parts", skip_serializing_if = "is_default")]
-    pub uri_parts: &'a str,
+    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    pub uri_parts: String,
     /// Limit the results to annotations whose URIs match the wildcard pattern.
-    /// See [the Hypothesis API docs](https://h.readthedocs.io/en/latest/api-reference/v1/#tag/annotations/paths/~1search/get) for more details on using this field
     #[serde(skip_serializing_if = "is_default")]
-    pub wildcard_uri: &'a str,
-    /// Limit the results to annotations made by the specified user. (in the format "acct:<username>@<authority>")
+    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    pub wildcard_uri: String,
+    /// Limit the results to annotations made by the specified user. (in the format `acct:<username>@<authority>`)
     #[serde(skip_serializing_if = "is_default")]
-    pub user: &'a str,
+    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    pub user: String,
     /// Limit the results to annotations made in the specified group (by group ID).
     #[serde(skip_serializing_if = "is_default")]
+    #[cfg_attr(feature = "application", structopt(default_value, long))]
     pub group: GroupID,
     /// Limit the results to annotations tagged with the specified value.
     #[serde(skip_serializing_if = "is_default")]
-    pub tag: &'a str,
-    /// Similar to tag but allows a comma-separated list of multiple tags.
+    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    pub tag: String,
+    /// Similar to tag but allows a list of multiple tags.
     #[serde(skip_serializing_if = "is_default")]
-    pub tags: Vec<&'a str>,
+    #[cfg_attr(feature = "application", structopt(default_value = "Vec::new()", long))]
+    pub tags: Vec<String>,
     /// Limit the results to annotations who contain the indicated keyword in any of the following fields:
-    ///
-    /// * `quote`
-    /// * `tags`
-    /// * `text`
-    /// * `url`
+    /// `quote`, `tags`, `text`, `url`
     #[serde(skip_serializing_if = "is_default")]
-    pub any: &'a str,
+    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    pub any: String,
     /// Limit the results to annotations that contain this text inside the text that was annotated.
     #[serde(skip_serializing_if = "is_default")]
-    pub quote: &'a str,
+    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    pub quote: String,
     /// Returns annotations that are replies to this parent annotation ID.
     #[serde(skip_serializing_if = "is_default")]
+    #[cfg_attr(feature = "application", structopt(default_value, long))]
     pub references: AnnotationID,
     /// Limit the results to annotations that contain this text in their textual body.
     #[serde(skip_serializing_if = "is_default")]
-    pub text: &'a str,
+    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    pub text: String,
 }
 
-impl<'a> Default for SearchQuery<'a> {
+impl Default for SearchQuery {
     fn default() -> Self {
         SearchQuery {
             limit: 20,
             sort: Default::default(),
-            search_after: "",
+            search_after: "".to_string(),
             offset: 0,
             order: Default::default(),
-            uri: "",
-            uri_parts: "",
-            wildcard_uri: "",
-            user: "",
-            group: "".into(),
-            tag: "",
+            uri: "".to_string(),
+            uri_parts: "".to_string(),
+            wildcard_uri: "".to_string(),
+            user: "".to_string(),
+            group: "".to_string(),
+            tag: "".to_string(),
             tags: vec![],
-            any: "",
-            quote: "",
-            references: "".into(),
-            text: "",
+            any: "".to_string(),
+            quote: "".to_string(),
+            references: "".to_string(),
+            text: "".to_string(),
         }
     }
 }

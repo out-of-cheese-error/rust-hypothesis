@@ -4,6 +4,9 @@ use eyre::WrapErr;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::str::FromStr;
+#[cfg(feature = "application")]
+use structopt::StructOpt;
 
 impl Hypothesis {
     /// Retrieve a list of applicable Groups, filtered by authority and target document (document_uri).
@@ -216,18 +219,40 @@ pub enum Expand {
     Scopes,
 }
 
+impl FromStr for Expand {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "organization" => Ok(Expand::Organization),
+            "scopes" => Ok(Expand::Scopes),
+            _ => Err("Wrong Expand".into()),
+        }
+    }
+}
+
 /// Filter groups by authority and target document
+#[cfg_attr(feature = "application", derive(StructOpt))]
 #[derive(Serialize, Debug, Default, Clone, PartialEq)]
 pub struct GroupFilters {
-    /// Filter returned groups to this authority. For authenticated requests, the user's associated authority will supersede any provided value.
+    /// Filter returned groups to this authority.
+    /// For authenticated requests, the user's associated authority will supersede any provided value.
+    ///
     /// Default: "hypothes.is"
     #[serde(skip_serializing_if = "is_default")]
+    #[cfg_attr(
+        feature = "application",
+        structopt(default_value = "hypothes.is", long)
+    )]
     pub authority: String,
     /// Only retrieve public (i.e. non-private) groups that apply to a given document URI (i.e. the target document being annotated).
     #[serde(skip_serializing_if = "is_default")]
+    #[cfg_attr(feature = "application", structopt(default_value, long))]
     pub document_uri: String,
-    /// One or more relations to expand for a group resource
+    /// One or more relations to expand for a group resource.
+    /// Possible values: organization, scopes
     #[serde(skip_serializing_if = "is_default")]
+    #[cfg_attr(feature = "application", structopt(default_value = "Vec::new()", long))]
     pub expand: Vec<Expand>,
 }
 

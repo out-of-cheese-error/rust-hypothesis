@@ -1,4 +1,6 @@
 pub mod annotations;
+#[cfg(feature = "application")]
+pub mod cli;
 pub mod groups;
 pub mod profile;
 
