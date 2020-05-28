@@ -5,8 +5,7 @@ use eyre::WrapErr;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::str::FromStr;
-#[cfg(feature = "application")]
+#[cfg(feature = "cli")]
 use structopt::StructOpt;
 
 impl Hypothesis {
@@ -42,7 +41,7 @@ impl Hypothesis {
         let text = self.client.get(url).send()?.text()?;
         let result = serde_json::from_str::<Vec<Group>>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure GroupFilters is valid");
+            .suggestion("Make sure input filters are valid");
         Ok(result?)
     }
 
@@ -220,20 +219,8 @@ pub enum Expand {
     Scopes,
 }
 
-impl FromStr for Expand {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "organization" => Ok(Expand::Organization),
-            "scopes" => Ok(Expand::Scopes),
-            _ => Err("Wrong Expand".into()),
-        }
-    }
-}
-
 /// Filter groups by authority and target document
-#[cfg_attr(feature = "application", derive(StructOpt))]
+#[cfg_attr(feature = "cli", derive(StructOpt))]
 #[derive(Serialize, Debug, Default, Clone, PartialEq)]
 pub struct GroupFilters {
     /// Filter returned groups to this authority.
@@ -241,19 +228,16 @@ pub struct GroupFilters {
     ///
     /// Default: "hypothes.is"
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(
-        feature = "application",
-        structopt(default_value = "hypothes.is", long)
-    )]
+    #[cfg_attr(feature = "cli", structopt(default_value = "hypothes.is", long))]
     pub authority: String,
     /// Only retrieve public (i.e. non-private) groups that apply to a given document URI (i.e. the target document being annotated).
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", structopt(default_value, long))]
     pub document_uri: String,
     /// One or more relations to expand for a group resource.
     /// Possible values: organization, scopes
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value = "Vec::new()", long))]
+    #[cfg_attr(feature = "cli", structopt(long, possible_values = & Expand::variants()))]
     pub expand: Vec<Expand>,
 }
 

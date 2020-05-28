@@ -1,21 +1,21 @@
 [package]
 name = "hypothesis"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Ninjani"]
 edition = "2018"
-description = "a Rust wrapper for the Hypothesis API"
+description = "a Rust wrapper and CLI for the Hypothesis API"
 repository = "https://github.com/out-of-cheese-error/rust-hypothesis"
 readme = "README.md"
 license = "MIT"
-keywords = ["hypothesis", "annotation", "api"]
-categories = ["api-bindings"]
+keywords = ["hypothesis", "annotation", "api", "cli"]
+categories = ["api-bindings", "command-line-utilities"]
 
 [features]
-default = ["application"]
+default = ["cli"]
 
-# Feature required for hypothesis, the CLI application.
-# Disable if using as a library.
-application = [
+# Feature required for hypothesis the CLI application.
+# Disable if using as a Rust crate.
+cli = [
     "structopt",
 ]
 

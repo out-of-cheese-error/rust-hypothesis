@@ -2,24 +2,39 @@
 ### Work in progress
 
 ## Description
-A lightweight wrapper for the [Hypothesis Web API v1.0.0](https://h.readthedocs.io/en/latest/api-reference/v1/). 
-It includes helper functions for all APIKey authorized endpoints related to 
+A lightweight wrapper and CLI for the [Hypothesis Web API v1.0.0](https://h.readthedocs.io/en/latest/api-reference/v1/). 
+It includes all APIKey authorized endpoints related to 
 * annotations (create / update / delete / search / fetch / flag), 
 * groups (create / update / list / fetch / leave / members) 
 * profile (user information / groups)
 
-## Installation
+## Installation and Usage
+### Authorization
+You'll need a [Hypothesis](https://hypothes.is) account, and a personal API token obtained as described [here](https://h.readthedocs.io/en/latest/api/authorization/). 
+Set the environment variables `$HYPOTHESIS_NAME` and `$HYPOTHESIS_KEY` to your username and the developer API key respectively.
+
+### As a command-line utility:
 ```bash
 cargo install hypothesis
 ```
+Run `hypothesis --help` to see subcommands and options.
 
-## Getting Started
-### Authorization
-You'll need a [Hypothesis](https://hypothes.is) account, and a personal API token obtained as described [here](https://h.readthedocs.io/en/latest/api/authorization/). 
-The code refers to your Hypothesis username as `username` and the API token as `developer_key`. 
+Generate shell completions:
+```bash
+hypothesis complete zsh > .oh-my-zsh/completions/_hypothesis
+exec zsh
+```
 
-### Examples
+### As a Rust crate
+Add to your Cargo.toml:
+```toml
+[dependencies]
+hypothesis = {version = "0.2.0", default-features = false}
+```
+
+#### Examples
 Check the [documentation](https://docs.rs/crate/hypothesis) of the `Hypothesis` struct for some usage examples.
+If you want to use environment variables, instantiate the api with `from_env` instead of `new`.
 
 TODO: Add a longer example here
 
@@ -33,4 +48,4 @@ See the [CHANGELOG](CHANGELOG.md)
 - Need to figure out how `Document` works to properly document it (hah).
 - Can't delete a group after making it, can leave it though (maybe it's the same thing?)
 - No idea what `UserProfile.preferences` and `UserProfile.features` mean.
- 
+- CLI just dumps output as JSON, this is fine right? Fancier CLIs can build on top of this (or use the crate directly)
