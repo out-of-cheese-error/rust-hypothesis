@@ -1,5 +1,6 @@
-use crate::{is_default, APIError, AnnotationID, GroupID, Hypothesis, UserAccountID, API_URL};
+use crate::{is_default, AnnotationID, GroupID, Hypothesis, UserAccountID, API_URL};
 
+use crate::errors::APIError;
 use chrono::{DateTime, Utc};
 use color_eyre::Help;
 use eyre::WrapErr;

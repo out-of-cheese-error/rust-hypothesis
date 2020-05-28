@@ -1,4 +1,5 @@
-use crate::{is_default, APIError, GroupID, Hypothesis, API_URL};
+use crate::errors::APIError;
+use crate::{is_default, GroupID, Hypothesis, API_URL};
 use color_eyre::Help;
 use eyre::WrapErr;
 use reqwest::Url;

@@ -1,13 +1,11 @@
 pub mod annotations;
 #[cfg(feature = "application")]
 pub mod cli;
+pub mod errors;
 pub mod groups;
 pub mod profile;
 
 use reqwest::header;
-use serde::{Deserialize, Serialize};
-use std::fmt;
-use thiserror::Error;
 
 pub const API_URL: &str = "https://api.hypothes.is/api";
 pub type GroupID = String;
@@ -57,19 +55,5 @@ impl Hypothesis {
             user,
             client,
         })
-    }
-}
-
-/// Errors returned from the Hypothesis API
-#[derive(Error, Serialize, Deserialize, Debug, Default, Clone)]
-pub struct APIError {
-    pub status: String,
-    pub reason: String,
-}
-
-impl fmt::Display for APIError {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Status: {}\nReason: {}", self.status, self.reason)
     }
 }

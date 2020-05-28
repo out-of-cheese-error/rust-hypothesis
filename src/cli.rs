@@ -2,7 +2,7 @@
 use crate::annotations::AnnotationMaker;
 use crate::annotations::SearchQuery;
 use crate::groups::{Expand, GroupFilters};
-use crate::{AnnotationID, GroupID};
+use crate::{AnnotationID, GroupID, Hypothesis};
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
@@ -143,4 +143,81 @@ pub enum ProfileCommand {
     User,
     /// Fetch the groups for which the currently-authenticated user is a member.
     Groups,
+}
+
+impl HypothesisCLI {
+    pub fn run(self, client: &Hypothesis) -> color_eyre::Result<()> {
+        match self {
+            HypothesisCLI::Annotations { cmd } => match cmd {
+                AnnotationsCommand::Create { annotation } => {
+                    let annotation = client.create_annotation(&annotation)?;
+                    println!("Annotation {} created", annotation.id);
+                }
+                AnnotationsCommand::Update { id, annotation } => {
+                    let annotation = client.update_annotation(&id, &annotation)?;
+                    println!("Annotation {} updated", annotation.id);
+                }
+                AnnotationsCommand::Search { query } => {
+                    let annotations = client.search_annotations(&query)?;
+                }
+                AnnotationsCommand::Fetch { id } => {
+                    let annotation = client.fetch_annotation(&id)?;
+                }
+                AnnotationsCommand::Delete { id } => {
+                    let deleted = client.delete_annotation(&id)?;
+                    if deleted {
+                        println!("Annotation {} deleted", id);
+                    } else {
+                        println!("Couldn't delete annotation {}", id);
+                    }
+                }
+                AnnotationsCommand::Flag { id } => {
+                    client.flag_annotation(&id)?;
+                    println!("Annotation {} flagged", id);
+                }
+                AnnotationsCommand::Hide { id } => {
+                    client.hide_annotation(&id)?;
+                    println!("Annotation {} hidden", id);
+                }
+                AnnotationsCommand::Show { id } => {
+                    client.show_annotation(&id)?;
+                    println!("Annotation {} unhidden", id);
+                }
+            },
+            HypothesisCLI::Groups { cmd } => match cmd {
+                GroupsCommand::List { filters } => {
+                    let groups = client.get_groups(&filters)?;
+                }
+                GroupsCommand::Create { name, description } => {
+                    let group = client.create_group(&name, description.as_deref())?;
+                }
+                GroupsCommand::Fetch { id, expand } => {
+                    let group = client.fetch_group(&id, expand)?;
+                }
+                GroupsCommand::Update {
+                    id,
+                    name,
+                    description,
+                } => {
+                    let group =
+                        client.update_group(&id, name.as_deref(), description.as_deref())?;
+                }
+                GroupsCommand::Members { id } => {
+                    let members = client.get_group_members(&id)?;
+                }
+                GroupsCommand::Leave { id } => {
+                    client.leave_group(&id)?;
+                }
+            },
+            HypothesisCLI::Profile { cmd } => match cmd {
+                ProfileCommand::User => {
+                    let profile = client.fetch_user_profile()?;
+                }
+                ProfileCommand::Groups => {
+                    let groups = client.fetch_user_groups()?;
+                }
+            },
+        }
+        Ok(())
+    }
 }

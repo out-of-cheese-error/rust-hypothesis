@@ -1,5 +1,6 @@
+use crate::errors::APIError;
 use crate::groups::Group;
-use crate::{APIError, Hypothesis, UserAccountID, API_URL};
+use crate::{Hypothesis, UserAccountID, API_URL};
 use color_eyre::Help;
 use eyre::WrapErr;
 use serde::{Deserialize, Serialize};
