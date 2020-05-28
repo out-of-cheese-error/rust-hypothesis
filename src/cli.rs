@@ -3,6 +3,9 @@ use crate::annotations::AnnotationMaker;
 use crate::annotations::SearchQuery;
 use crate::groups::{Expand, GroupFilters};
 use crate::{AnnotationID, GroupID, Hypothesis};
+use std::io::Write;
+use std::path::PathBuf;
+use std::{fs, io};
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
@@ -38,6 +41,9 @@ pub enum AnnotationsCommand {
     Create {
         #[structopt(flatten)]
         annotation: AnnotationMaker,
+        /// write created annotation to this file in JSON format
+        #[structopt(parse(from_os_str), short = "o", long)]
+        file: Option<PathBuf>,
     },
 
     /// Update an existing annotation
@@ -46,17 +52,26 @@ pub enum AnnotationsCommand {
         id: AnnotationID,
         #[structopt(flatten)]
         annotation: AnnotationMaker,
+        /// write updated annotation to this file in JSON format
+        #[structopt(parse(from_os_str), short = "o", long)]
+        file: Option<PathBuf>,
     },
 
     /// Search for annotations with optional filters
     Search {
         #[structopt(flatten)]
         query: SearchQuery,
+        /// json file to write search results to, writes to stdout if not given
+        #[structopt(parse(from_os_str), short = "o", long)]
+        file: Option<PathBuf>,
     },
     /// Fetch annotation by ID
     Fetch {
         /// unique ID of the annotation to fetch
         id: AnnotationID,
+        /// json file to write annotation to, writes to stdout if not given
+        #[structopt(parse(from_os_str), short = "o", long)]
+        file: Option<PathBuf>,
     },
     /// Delete annotation by ID
     Delete {
@@ -97,6 +112,9 @@ pub enum GroupsCommand {
     List {
         #[structopt(flatten)]
         filters: GroupFilters,
+        /// json file to write filtered groups to, writes to stdout if not given
+        #[structopt(parse(from_os_str), short = "o", long)]
+        file: Option<PathBuf>,
     },
     /// Create a new, private group for the currently-authenticated user.
     Create {
@@ -104,6 +122,9 @@ pub enum GroupsCommand {
         name: String,
         /// group description
         description: Option<String>,
+        /// write created group to this file in JSON format
+        #[structopt(parse(from_os_str), short = "o", long)]
+        file: Option<PathBuf>,
     },
     /// Fetch a single Group resource.
     Fetch {
@@ -112,6 +133,9 @@ pub enum GroupsCommand {
         /// Expand the organization, scope, or both
         #[structopt(long, short)]
         expand: Vec<Expand>,
+        /// write group to this file in JSON format
+        #[structopt(parse(from_os_str), short = "o", long)]
+        file: Option<PathBuf>,
     },
     /// Update a Group resource.
     Update {
@@ -123,6 +147,9 @@ pub enum GroupsCommand {
         /// new group description
         #[structopt(long, short)]
         description: Option<String>,
+        /// write updated group to this file in JSON format
+        #[structopt(parse(from_os_str), short = "o", long)]
+        file: Option<PathBuf>,
     },
     /// Fetch a list of all members (users) in a group.
     ///
@@ -132,6 +159,9 @@ pub enum GroupsCommand {
     Members {
         /// unique Group ID
         id: GroupID,
+        /// json file to write groups members to, writes to stdout if not given
+        #[structopt(parse(from_os_str), short = "o", long)]
+        file: Option<PathBuf>,
     },
     /// Remove yourself from a group.
     Leave { id: GroupID },
@@ -140,32 +170,64 @@ pub enum GroupsCommand {
 #[derive(StructOpt, Debug)]
 pub enum ProfileCommand {
     /// Fetch profile information for the currently-authenticated user.
-    User,
+    User {
+        /// json file to write user profile to, writes to stdout if not given
+        #[structopt(parse(from_os_str), short = "o", long)]
+        file: Option<PathBuf>,
+    },
     /// Fetch the groups for which the currently-authenticated user is a member.
-    Groups,
+    Groups {
+        /// json file to write groups to, writes to stdout if not given
+        #[structopt(parse(from_os_str), short = "o", long)]
+        file: Option<PathBuf>,
+    },
 }
 
 impl HypothesisCLI {
     pub fn run(self, client: Hypothesis) -> color_eyre::Result<()> {
         match self {
             HypothesisCLI::Annotations { cmd } => match cmd {
-                AnnotationsCommand::Create { annotation } => {
+                AnnotationsCommand::Create { annotation, file } => {
                     let annotation = client.create_annotation(&annotation)?;
                     println!("Annotation {} created", annotation.id);
-                }
-                AnnotationsCommand::Update { id, annotation } => {
-                    let annotation = client.update_annotation(&id, &annotation)?;
-                    println!("Annotation {} updated", annotation.id);
-                }
-                AnnotationsCommand::Search { query } => {
-                    let annotations = client.search_annotations(&query)?;
-                    for annotation in annotations {
-                        println!("{:#?}", annotation);
+                    if let Some(file) = file {
+                        let writer: Box<dyn io::Write> = Box::new(fs::File::open(file)?);
+                        let mut buffered = io::BufWriter::new(writer);
+                        writeln!(buffered, "{}", serde_json::to_string(&annotation)?)?;
                     }
                 }
-                AnnotationsCommand::Fetch { id } => {
+                AnnotationsCommand::Update {
+                    id,
+                    annotation,
+                    file,
+                } => {
+                    let annotation = client.update_annotation(&id, &annotation)?;
+                    println!("Annotation {} updated", annotation.id);
+                    if let Some(file) = file {
+                        let writer: Box<dyn io::Write> = Box::new(fs::File::open(file)?);
+                        let mut buffered = io::BufWriter::new(writer);
+                        writeln!(buffered, "{}", serde_json::to_string(&annotation)?)?;
+                    }
+                }
+                AnnotationsCommand::Search { query, file } => {
+                    let annotations = client.search_annotations(&query)?;
+                    let writer: Box<dyn io::Write> = match file {
+                        Some(file) => Box::new(fs::File::open(file)?),
+                        None => Box::new(io::stdout()),
+                    };
+                    let mut buffered = io::BufWriter::new(writer);
+                    for annotation in annotations {
+                        writeln!(buffered, "{}", serde_json::to_string(&annotation)?)?;
+                    }
+                }
+                AnnotationsCommand::Fetch { id, file } => {
                     let annotation = client.fetch_annotation(&id)?;
-                    println!("{:#?}", annotation);
+                    let writer: Box<dyn io::Write> = match file {
+                        Some(file) => Box::new(fs::File::open(file)?),
+                        None => Box::new(io::stdout()),
+                    };
+                    let mut buffered = io::BufWriter::new(writer);
+                    writeln!(buffered, "{}", serde_json::to_string(&annotation)?)?;
                 }
                 AnnotationsCommand::Delete { id } => {
                     let deleted = client.delete_annotation(&id)?;
@@ -189,33 +251,63 @@ impl HypothesisCLI {
                 }
             },
             HypothesisCLI::Groups { cmd } => match cmd {
-                GroupsCommand::List { filters } => {
+                GroupsCommand::List { filters, file } => {
                     let groups = client.get_groups(&filters)?;
+                    let writer: Box<dyn io::Write> = match file {
+                        Some(file) => Box::new(fs::File::open(file)?),
+                        None => Box::new(io::stdout()),
+                    };
+                    let mut buffered = io::BufWriter::new(writer);
                     for group in groups {
-                        println!("{:#?}", group);
+                        writeln!(buffered, "{}", serde_json::to_string(&group)?)?;
                     }
                 }
-                GroupsCommand::Create { name, description } => {
+                GroupsCommand::Create {
+                    name,
+                    description,
+                    file,
+                } => {
                     let group = client.create_group(&name, description.as_deref())?;
-                    println!("{:#?}", group);
+                    println!("Created Group {}", group.id);
+                    if let Some(file) = file {
+                        let writer: Box<dyn io::Write> = Box::new(fs::File::open(file)?);
+                        let mut buffered = io::BufWriter::new(writer);
+                        writeln!(buffered, "{}", serde_json::to_string(&group)?)?;
+                    }
                 }
-                GroupsCommand::Fetch { id, expand } => {
+                GroupsCommand::Fetch { id, expand, file } => {
                     let group = client.fetch_group(&id, expand)?;
-                    println!("{:#?}", group);
+                    let writer: Box<dyn io::Write> = match file {
+                        Some(file) => Box::new(fs::File::open(file)?),
+                        None => Box::new(io::stdout()),
+                    };
+                    let mut buffered = io::BufWriter::new(writer);
+                    writeln!(buffered, "{}", serde_json::to_string(&group)?)?;
                 }
                 GroupsCommand::Update {
                     id,
                     name,
                     description,
+                    file,
                 } => {
                     let group =
                         client.update_group(&id, name.as_deref(), description.as_deref())?;
-                    println!("{:#?}", group);
+                    println!("Updated group {}", group.id);
+                    if let Some(file) = file {
+                        let writer: Box<dyn io::Write> = Box::new(fs::File::open(file)?);
+                        let mut buffered = io::BufWriter::new(writer);
+                        writeln!(buffered, "{}", serde_json::to_string(&group)?)?;
+                    }
                 }
-                GroupsCommand::Members { id } => {
+                GroupsCommand::Members { id, file } => {
                     let members = client.get_group_members(&id)?;
+                    let writer: Box<dyn io::Write> = match file {
+                        Some(file) => Box::new(fs::File::open(file)?),
+                        None => Box::new(io::stdout()),
+                    };
+                    let mut buffered = io::BufWriter::new(writer);
                     for member in members {
-                        println!("{:#?}", member);
+                        writeln!(buffered, "{}", serde_json::to_string(&member)?)?;
                     }
                 }
                 GroupsCommand::Leave { id } => {
@@ -224,14 +316,24 @@ impl HypothesisCLI {
                 }
             },
             HypothesisCLI::Profile { cmd } => match cmd {
-                ProfileCommand::User => {
+                ProfileCommand::User { file } => {
                     let profile = client.fetch_user_profile()?;
-                    println!("{:#?}", profile);
+                    let writer: Box<dyn io::Write> = match file {
+                        Some(file) => Box::new(fs::File::open(file)?),
+                        None => Box::new(io::stdout()),
+                    };
+                    let mut buffered = io::BufWriter::new(writer);
+                    writeln!(buffered, "{}", serde_json::to_string(&profile)?)?;
                 }
-                ProfileCommand::Groups => {
+                ProfileCommand::Groups { file } => {
                     let groups = client.fetch_user_groups()?;
+                    let writer: Box<dyn io::Write> = match file {
+                        Some(file) => Box::new(fs::File::open(file)?),
+                        None => Box::new(io::stdout()),
+                    };
+                    let mut buffered = io::BufWriter::new(writer);
                     for group in groups {
-                        println!("{:#?}", group);
+                        writeln!(buffered, "{}", serde_json::to_string(&group)?)?;
                     }
                 }
             },
