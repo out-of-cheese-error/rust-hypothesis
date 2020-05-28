@@ -19,4 +19,11 @@ impl fmt::Display for APIError {
 #[cfg(feature = "application")]
 /// Errors returned from the Hypothesis CLI
 #[derive(Error, Serialize, Deserialize, Debug, Clone)]
-pub enum CLIError {}
+pub enum CLIError {
+    /// Thrown when Hypothesis client creation fails
+    #[error("Could not authorize")]
+    AuthorizationError,
+    /// Failed to parse a command line argument into its corresponding type
+    #[error("ParseError: {name:?} must be one of {types:?}")]
+    ParseError { name: String, types: Vec<String> },
+}

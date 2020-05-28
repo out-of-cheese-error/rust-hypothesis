@@ -146,7 +146,7 @@ pub enum ProfileCommand {
 }
 
 impl HypothesisCLI {
-    pub fn run(self, client: &Hypothesis) -> color_eyre::Result<()> {
+    pub fn run(self, client: Hypothesis) -> color_eyre::Result<()> {
         match self {
             HypothesisCLI::Annotations { cmd } => match cmd {
                 AnnotationsCommand::Create { annotation } => {
@@ -159,9 +159,13 @@ impl HypothesisCLI {
                 }
                 AnnotationsCommand::Search { query } => {
                     let annotations = client.search_annotations(&query)?;
+                    for annotation in annotations {
+                        println!("{:#?}", annotation);
+                    }
                 }
                 AnnotationsCommand::Fetch { id } => {
                     let annotation = client.fetch_annotation(&id)?;
+                    println!("{:#?}", annotation);
                 }
                 AnnotationsCommand::Delete { id } => {
                     let deleted = client.delete_annotation(&id)?;
@@ -187,12 +191,17 @@ impl HypothesisCLI {
             HypothesisCLI::Groups { cmd } => match cmd {
                 GroupsCommand::List { filters } => {
                     let groups = client.get_groups(&filters)?;
+                    for group in groups {
+                        println!("{:#?}", group);
+                    }
                 }
                 GroupsCommand::Create { name, description } => {
                     let group = client.create_group(&name, description.as_deref())?;
+                    println!("{:#?}", group);
                 }
                 GroupsCommand::Fetch { id, expand } => {
                     let group = client.fetch_group(&id, expand)?;
+                    println!("{:#?}", group);
                 }
                 GroupsCommand::Update {
                     id,
@@ -201,20 +210,29 @@ impl HypothesisCLI {
                 } => {
                     let group =
                         client.update_group(&id, name.as_deref(), description.as_deref())?;
+                    println!("{:#?}", group);
                 }
                 GroupsCommand::Members { id } => {
                     let members = client.get_group_members(&id)?;
+                    for member in members {
+                        println!("{:#?}", member);
+                    }
                 }
                 GroupsCommand::Leave { id } => {
                     client.leave_group(&id)?;
+                    println!("You've left Group {}", id);
                 }
             },
             HypothesisCLI::Profile { cmd } => match cmd {
                 ProfileCommand::User => {
                     let profile = client.fetch_user_profile()?;
+                    println!("{:#?}", profile);
                 }
                 ProfileCommand::Groups => {
                     let groups = client.fetch_user_groups()?;
+                    for group in groups {
+                        println!("{:#?}", group);
+                    }
                 }
             },
         }

@@ -1,4 +1,4 @@
-use crate::errors::APIError;
+use crate::errors::{APIError, CLIError};
 use crate::{is_default, GroupID, Hypothesis, API_URL};
 use color_eyre::Help;
 use eyre::WrapErr;
@@ -42,7 +42,7 @@ impl Hypothesis {
         let text = self.client.get(url).send()?.text()?;
         let result = serde_json::from_str::<Vec<Group>>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure GroupFilters is valid");
+            .suggestion("Make sure input filters are valid");
         Ok(result?)
     }
 
@@ -221,13 +221,16 @@ pub enum Expand {
 }
 
 impl FromStr for Expand {
-    type Err = String;
+    type Err = CLIError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "organization" => Ok(Expand::Organization),
             "scopes" => Ok(Expand::Scopes),
-            _ => Err("Wrong Expand".into()),
+            _ => Err(CLIError::ParseError {
+                name: "expand".into(),
+                types: vec!["organization".into(), "scopes".into()],
+            }),
         }
     }
 }
@@ -253,7 +256,7 @@ pub struct GroupFilters {
     /// One or more relations to expand for a group resource.
     /// Possible values: organization, scopes
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value = "Vec::new()", long))]
+    #[cfg_attr(feature = "application", structopt(long))]
     pub expand: Vec<Expand>,
 }
 

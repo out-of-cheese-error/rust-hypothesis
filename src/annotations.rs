@@ -1,11 +1,11 @@
 use crate::{is_default, AnnotationID, GroupID, Hypothesis, UserAccountID, API_URL};
 
-use crate::errors::APIError;
+use crate::errors::{APIError, CLIError};
 use chrono::{DateTime, Utc};
 use color_eyre::Help;
 use eyre::WrapErr;
 use reqwest::Url;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use std::collections::HashMap;
 use std::str::FromStr;
 #[cfg(feature = "application")]
@@ -52,7 +52,7 @@ impl Hypothesis {
             .text()?;
         let result = serde_json::from_str::<Annotation>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the AnnotationMaker is valid");
+            .suggestion("Make sure input fields are valid");
         Ok(result?)
     }
 
@@ -102,7 +102,7 @@ impl Hypothesis {
             .text()?;
         let result = serde_json::from_str::<Annotation>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the AnnotationMaker is valid");
+            .suggestion("Make sure input fields are valid");
         Ok(result?)
     }
 
@@ -114,13 +114,12 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # fn main() -> color_eyre::Result<()> {
-    /// use hypothesis::Hypothesis;
+    /// use hypothesis::{Hypothesis, UserAccountID};
     /// use hypothesis::annotations::SearchQuery;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
-    /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
-    ///     /// Search for your own annotations:
+    /// /// Search for your own annotations:
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// let search_query = SearchQuery {
     ///             limit: 30,
@@ -145,7 +144,7 @@ impl Hypothesis {
         let text = self.client.get(url).send()?.text()?;
         let result = serde_json::from_str::<SearchResult>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the SearchQuery is valid");
+            .suggestion("Make sure the query is valid");
         Ok(result?.rows)
     }
 
@@ -325,7 +324,7 @@ pub struct AnnotationMaker {
     pub text: String,
     /// Tags attached to the annotation
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value = "Vec::new()", long))]
+    #[cfg_attr(feature = "application", structopt(long))]
     pub tags: Vec<String>,
     /// Further metadata about the target document
     #[serde(skip_serializing_if = "is_default")]
@@ -347,7 +346,7 @@ pub struct AnnotationMaker {
     pub target: Target,
     /// Annotation IDs for any annotations this annotation references (e.g. is a reply to)
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value = "Vec::new()", long))]
+    #[cfg_attr(feature = "application", structopt(long))]
     pub references: Vec<AnnotationID>,
 }
 
@@ -513,7 +512,7 @@ impl Default for Sort {
 }
 
 impl FromStr for Sort {
-    type Err = String;
+    type Err = CLIError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -522,7 +521,16 @@ impl FromStr for Sort {
             "id" => Ok(Sort::Id),
             "group" => Ok(Sort::Group),
             "user" => Ok(Sort::User),
-            _ => Err("Wrong Sort".into()),
+            _ => Err(CLIError::ParseError {
+                name: "sort".into(),
+                types: vec![
+                    "created".into(),
+                    "updated".into(),
+                    "id".into(),
+                    "group".into(),
+                    "user".into(),
+                ],
+            }),
         }
     }
 }
@@ -541,13 +549,16 @@ impl Default for Order {
 }
 
 impl FromStr for Order {
-    type Err = String;
+    type Err = CLIError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "desc" => Ok(Order::Desc),
             "asc" => Ok(Order::Asc),
-            _ => Err("Wrong Order".into()),
+            _ => Err(CLIError::ParseError {
+                name: "order".into(),
+                types: vec!["asc".into(), "desc".into()],
+            }),
         }
     }
 }
@@ -603,9 +614,9 @@ pub struct SearchQuery {
     #[cfg_attr(feature = "application", structopt(default_value, long))]
     pub wildcard_uri: String,
     /// Limit the results to annotations made by the specified user. (in the format `acct:<username>@<authority>`)
-    #[serde(skip_serializing_if = "is_default")]
+    #[serde(skip_serializing_if = "is_default", serialize_with = "serialize_user")]
     #[cfg_attr(feature = "application", structopt(default_value, long))]
-    pub user: String,
+    pub user: UserAccountID,
     /// Limit the results to annotations made in the specified group (by group ID).
     #[serde(skip_serializing_if = "is_default")]
     #[cfg_attr(feature = "application", structopt(default_value, long))]
@@ -616,7 +627,7 @@ pub struct SearchQuery {
     pub tag: String,
     /// Similar to tag but allows a list of multiple tags.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "application", structopt(default_value = "Vec::new()", long))]
+    #[cfg_attr(feature = "application", structopt(long))]
     pub tags: Vec<String>,
     /// Limit the results to annotations who contain the indicated keyword in any of the following fields:
     /// `quote`, `tags`, `text`, `url`
@@ -637,6 +648,13 @@ pub struct SearchQuery {
     pub text: String,
 }
 
+fn serialize_user<S>(x: &UserAccountID, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    s.serialize_str(&x.0)
+}
+
 impl Default for SearchQuery {
     fn default() -> Self {
         SearchQuery {
@@ -648,7 +666,7 @@ impl Default for SearchQuery {
             uri: "".to_string(),
             uri_parts: "".to_string(),
             wildcard_uri: "".to_string(),
-            user: "".to_string(),
+            user: Default::default(),
             group: "".to_string(),
             tag: "".to_string(),
             tags: vec![],
