@@ -598,7 +598,7 @@ pub struct SearchQuery {
     /// Similar to tag but allows a list of multiple tags.
     #[serde(skip_serializing_if = "is_default")]
     #[cfg_attr(feature = "cli", structopt(long))]
-    pub tags: Vec<String>,
+    pub tags: Option<Vec<String>>,
     /// Limit the results to annotations who contain the indicated keyword in any of the following fields:
     /// `quote`, `tags`, `text`, `url`
     #[serde(skip_serializing_if = "is_default")]
@@ -639,7 +639,7 @@ impl Default for SearchQuery {
             user: Default::default(),
             group: "".to_string(),
             tag: "".to_string(),
-            tags: vec![],
+            tags: None,
             any: "".to_string(),
             quote: "".to_string(),
             references: "".to_string(),
