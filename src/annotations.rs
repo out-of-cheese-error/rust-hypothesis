@@ -78,7 +78,7 @@ impl Hypothesis {
     /// #             })?;
     /// #    let annotation_id = annotation.id.to_owned();    
     /// let updated_annotation = api.update_annotation(&annotation_id, &AnnotationMaker {
-    ///             tags: vec!["tag1".to_string(), "tag2".to_string()],
+    ///             tags: Some(vec!["tag1".to_string(), "tag2".to_string()]),
     ///             text: "New String".to_string(),
     ///             ..Default::default()
     ///  })?;
@@ -334,7 +334,7 @@ pub struct AnnotationMaker {
     /// Tags attached to the annotation
     #[serde(skip_serializing_if = "is_default")]
     #[cfg_attr(feature = "cli", structopt(long))]
-    pub tags: Vec<String>,
+    pub tags: Option<Vec<String>>,
     /// Further metadata about the target document
     #[serde(skip_serializing_if = "is_default")]
     #[cfg_attr(feature = "cli", structopt(skip))]
@@ -408,7 +408,7 @@ pub struct Annotation {
     /// The text content of the annotation body (NOT the selected text in the document)
     pub text: String,
     /// Tags attached to annotation
-    pub tags: Vec<String>,
+    pub tags: Option<Vec<String>>,
     /// The unique identifier for the annotation's group
     pub group: GroupID,
     pub permissions: Permissions,
@@ -598,7 +598,7 @@ pub struct SearchQuery {
     /// Similar to tag but allows a list of multiple tags.
     #[serde(skip_serializing_if = "is_default")]
     #[cfg_attr(feature = "cli", structopt(long))]
-    pub tags: Option<Vec<String>>,
+    pub tags: Vec<String>,
     /// Limit the results to annotations who contain the indicated keyword in any of the following fields:
     /// `quote`, `tags`, `text`, `url`
     #[serde(skip_serializing_if = "is_default")]
@@ -639,7 +639,7 @@ impl Default for SearchQuery {
             user: Default::default(),
             group: "".to_string(),
             tag: "".to_string(),
-            tags: None,
+            tags: vec![],
             any: "".to_string(),
             quote: "".to_string(),
             references: "".to_string(),
