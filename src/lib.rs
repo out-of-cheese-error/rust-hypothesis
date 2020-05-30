@@ -23,13 +23,13 @@ impl FromStr for UserAccountID {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self::new(s))
+        Ok(Self::from(s))
     }
 }
 
 impl UserAccountID {
-    pub fn new(user: &str) -> Self {
-        Self(format!("acct:{}@hypothes.is", user))
+    pub fn from(username: &str) -> Self {
+        Self(format!("acct:{}@hypothes.is", username))
     }
 
     pub fn get(&self) -> String {
