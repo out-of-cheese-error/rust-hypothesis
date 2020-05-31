@@ -14,7 +14,8 @@ impl Hypothesis {
     ///
     /// # Example
     /// ```
-    /// # fn main() -> color_eyre::Result<()> {
+    /// #[tokio::main]
+    /// # async fn main() -> color_eyre::Result<()> {
     /// use hypothesis::Hypothesis;
     /// use hypothesis::groups::GroupFilters;
     /// #     dotenv::dotenv()?;
@@ -23,12 +24,13 @@ impl Hypothesis {
     ///
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// /// Get all Groups belonging to user
-    /// let groups = api.get_groups(&GroupFilters::default())?;
+    /// let groups = api.get_groups(&GroupFilters::default()).await?;
     /// #    assert!(!groups.is_empty());
     /// #    Ok(())
     /// # }
     /// ```
-    pub fn get_groups(&self, query: &GroupFilters) -> color_eyre::Result<Vec<Group>> {
+
+    pub async fn get_groups(&self, query: &GroupFilters) -> color_eyre::Result<Vec<Group>> {
         let query: HashMap<String, serde_json::Value> =
             serde_json::from_str(&serde_json::to_string(&query)?)?;
         let url = Url::parse_with_params(
@@ -38,7 +40,7 @@ impl Hypothesis {
                 .map(|(k, v)| (k, v.to_string().replace('"', "")))
                 .collect::<Vec<_>>(),
         )?;
-        let text = self.client.get(url).send()?.text()?;
+        let text = self.client.get(url).send().await?.text().await?;
         let result = serde_json::from_str::<Vec<Group>>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
             .suggestion("Make sure input filters are valid");
@@ -49,18 +51,24 @@ impl Hypothesis {
     ///
     /// # Example
     /// ```no_run
-    /// # fn main() -> color_eyre::Result<()> {
+    /// # #[tokio::main]
+    /// # async fn main() -> color_eyre::Result<()> {
     /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     ///
     /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// let group = api.create_group("my_group", Some("a test group"))?;
+    /// let group = api.create_group("my_group", Some("a test group")).await?;
     /// #    Ok(())
     /// # }
     /// ```
-    pub fn create_group(&self, name: &str, description: Option<&str>) -> color_eyre::Result<Group> {
+
+    pub async fn create_group(
+        &self,
+        name: &str,
+        description: Option<&str>,
+    ) -> color_eyre::Result<Group> {
         let mut params = HashMap::new();
         params.insert("name", name);
         if let Some(description) = description {
@@ -70,8 +78,10 @@ impl Hypothesis {
             .client
             .post(&format!("{}/groups", API_URL))
             .json(&params)
-            .send()?
-            .text()?;
+            .send()
+            .await?
+            .text()
+            .await?;
         let result = serde_json::from_str::<Group>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
             .suggestion("OutOfCheeseError: Redo from start.");
@@ -82,7 +92,8 @@ impl Hypothesis {
     ///
     /// # Example
     /// ```
-    /// # fn main() -> color_eyre::Result<()> {
+    /// # #[tokio::main]
+    /// # async fn main() -> color_eyre::Result<()> {
     /// use hypothesis::Hypothesis;
     /// use hypothesis::groups::Expand;
     /// #     dotenv::dotenv()?;
@@ -92,11 +103,16 @@ impl Hypothesis {
     ///
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// /// Expands organization into a struct
-    /// let group = api.fetch_group(&group_id, vec![Expand::Organization])?;
+    /// let group = api.fetch_group(&group_id, vec![Expand::Organization]).await?;
     /// #    Ok(())
     /// # }    
     /// ```
-    pub fn fetch_group(&self, id: &GroupID, expand: Vec<Expand>) -> color_eyre::Result<Group> {
+
+    pub async fn fetch_group(
+        &self,
+        id: &GroupID,
+        expand: Vec<Expand>,
+    ) -> color_eyre::Result<Group> {
         let params: HashMap<&str, Vec<String>> = if !expand.is_empty() {
             vec![(
                 "expand",
@@ -114,8 +130,10 @@ impl Hypothesis {
             .client
             .get(&format!("{}/groups/{}", API_URL, id))
             .json(&params)
-            .send()?
-            .text()?;
+            .send()
+            .await?
+            .text()
+            .await?;
         let result = serde_json::from_str::<Group>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
             .suggestion("Make sure the given GroupId exists");
@@ -126,7 +144,8 @@ impl Hypothesis {
     ///
     /// # Example
     /// ```no_run
-    /// # fn main() -> color_eyre::Result<()> {
+    /// #[tokio::main]
+    /// # async fn main() -> color_eyre::Result<()> {
     /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
@@ -134,13 +153,14 @@ impl Hypothesis {
     /// #     let group_id = dotenv::var("TEST_GROUP_ID")?;
     ///
     /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// let group = api.update_group(&group_id, Some("new_group_name"), None)?;
+    /// let group = api.update_group(&group_id, Some("new_group_name"), None).await?;
     /// assert_eq!(&group.name, "new_group_name");
     /// assert_eq!(group.id, group_id);
     /// #    Ok(())
     /// # }
     /// ```
-    pub fn update_group(
+
+    pub async fn update_group(
         &self,
         id: &GroupID,
         name: Option<&str>,
@@ -157,8 +177,10 @@ impl Hypothesis {
             .client
             .patch(&format!("{}/groups/{}", API_URL, id))
             .form(&params)
-            .send()?
-            .text()?;
+            .send()
+            .await?
+            .text()
+            .await?;
         let result = serde_json::from_str::<Group>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
             .suggestion("Make sure the given GroupID exists");
@@ -171,7 +193,8 @@ impl Hypothesis {
     ///
     /// # Example
     /// ```
-    /// # fn main() -> color_eyre::Result<()> {
+    /// # #[tokio::main]
+    /// # async fn main() -> color_eyre::Result<()> {
     /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
@@ -179,16 +202,19 @@ impl Hypothesis {
     /// #     let group_id = dotenv::var("TEST_GROUP_ID")?;
     ///
     /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// let members = api.get_group_members(&group_id)?;
+    /// let members = api.get_group_members(&group_id).await?;
     /// #    Ok(())
     /// # }
     /// ```
-    pub fn get_group_members(&self, id: &GroupID) -> color_eyre::Result<Vec<GroupMember>> {
+
+    pub async fn get_group_members(&self, id: &GroupID) -> color_eyre::Result<Vec<GroupMember>> {
         let text = self
             .client
             .get(&format!("{}/groups/{}/members", API_URL, id))
-            .send()?
-            .text()?;
+            .send()
+            .await?
+            .text()
+            .await?;
         let result = serde_json::from_str::<Vec<GroupMember>>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
             .suggestion("Make sure the given GroupID exists");
@@ -196,12 +222,15 @@ impl Hypothesis {
     }
 
     /// Remove yourself from a group.
-    pub fn leave_group(&self, id: &GroupID) -> color_eyre::Result<()> {
+
+    pub async fn leave_group(&self, id: &GroupID) -> color_eyre::Result<()> {
         let text = self
             .client
             .delete(&format!("{}/groups/{}/members/me", API_URL, id))
-            .send()?
-            .text()?;
+            .send()
+            .await?
+            .text()
+            .await?;
         let error = serde_json::from_str::<APIError>(&text);
         if let Ok(error) = error {
             Err(error).suggestion("Make sure the given GroupID exists")

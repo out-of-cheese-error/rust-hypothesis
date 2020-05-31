@@ -54,7 +54,7 @@ pub struct Hypothesis {
     pub username: String,
     /// "acct:{username}@hypothes.is"
     pub user: UserAccountID,
-    client: reqwest::blocking::Client,
+    client: reqwest::Client,
 }
 
 impl Hypothesis {
@@ -78,7 +78,7 @@ impl Hypothesis {
             header::AUTHORIZATION,
             header::HeaderValue::from_str(&format!("Bearer {}", developer_key))?,
         );
-        let client = reqwest::blocking::Client::builder()
+        let client = reqwest::Client::builder()
             .default_headers(headers)
             .build()?;
         Ok(Self {

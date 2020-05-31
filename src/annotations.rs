@@ -19,7 +19,8 @@ impl Hypothesis {
     ///
     /// # Example
     /// ```
-    /// # fn main() -> color_eyre::Result<()> {
+    /// # #[tokio::main]
+    /// # async fn main() -> color_eyre::Result<()> {
     /// use hypothesis::Hypothesis;
     /// use hypothesis::annotations::AnnotationMaker;
     /// #     dotenv::dotenv()?;
@@ -33,13 +34,13 @@ impl Hypothesis {
     ///                 uri: "http://example.com".to_string(),
     ///                 group: group_id,
     ///                 ..Default::default()
-    /// })?;
+    /// }).await?;
     /// assert_eq!(&annotation.text, "string");
-    /// #    api.delete_annotation(&annotation.id)?;
+    /// #    api.delete_annotation(&annotation.id).await?;
     /// #    Ok(())
     /// # }
     /// ```
-    pub fn create_annotation(
+    pub async fn create_annotation(
         &self,
         annotation: &AnnotationMaker,
     ) -> color_eyre::Result<Annotation> {
@@ -47,8 +48,10 @@ impl Hypothesis {
             .client
             .post(&format!("{}/annotations", API_URL))
             .json(annotation)
-            .send()?
-            .text()?;
+            .send()
+            .await?
+            .text()
+            .await?;
         let result = serde_json::from_str::<Annotation>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
             .suggestion("Make sure input fields are valid");
@@ -62,7 +65,8 @@ impl Hypothesis {
     ///
     /// # Example
     /// ```
-    /// # fn main() -> color_eyre::Result<()> {
+    /// # #[tokio::main]
+    /// # async fn main() -> color_eyre::Result<()> {
     /// use hypothesis::Hypothesis;
     /// use hypothesis::annotations::AnnotationMaker;
     /// #     dotenv::dotenv()?;
@@ -75,20 +79,21 @@ impl Hypothesis {
     /// #                 uri: "http://example.com".to_string(),
     /// #                 group: group_id,
     /// #                 ..Default::default()
-    /// #             })?;
+    /// #             }).await?;
     /// #    let annotation_id = annotation.id.to_owned();    
     /// let updated_annotation = api.update_annotation(&annotation_id, &AnnotationMaker {
     ///             tags: Some(vec!["tag1".to_string(), "tag2".to_string()]),
     ///             text: "New String".to_string(),
     ///             ..Default::default()
-    ///  })?;
+    ///  }).await?;
     ///  assert_eq!(updated_annotation.id, annotation_id);
     ///  assert_eq!(&updated_annotation.text, "New String");
-    /// #    api.delete_annotation(&updated_annotation.id)?;
+    /// #    api.delete_annotation(&updated_annotation.id).await?;
     /// #    Ok(())
     /// # }
     /// ```
-    pub fn update_annotation(
+
+    pub async fn update_annotation(
         &self,
         id: &AnnotationID,
         annotation: &AnnotationMaker,
@@ -97,8 +102,10 @@ impl Hypothesis {
             .client
             .patch(&format!("{}/annotations/{}", API_URL, id))
             .json(&annotation)
-            .send()?
-            .text()?;
+            .send()
+            .await?
+            .text()
+            .await?;
         let result = serde_json::from_str::<Annotation>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
             .suggestion("Make sure input fields are valid");
@@ -112,7 +119,8 @@ impl Hypothesis {
     ///
     /// # Example
     /// ```
-    /// # fn main() -> color_eyre::Result<()> {
+    /// # #[tokio::main]
+    /// # async fn main() -> color_eyre::Result<()> {
     /// use hypothesis::{Hypothesis, UserAccountID};
     /// use hypothesis::annotations::SearchQuery;
     /// #     dotenv::dotenv()?;
@@ -125,12 +133,16 @@ impl Hypothesis {
     ///             user: api.user.clone(),
     ///             ..Default::default()
     /// };
-    /// let search_results = api.search_annotations(&search_query)?;
+    /// let search_results = api.search_annotations(&search_query).await?;
     /// #     assert!(!search_results.is_empty());
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn search_annotations(&self, query: &SearchQuery) -> color_eyre::Result<Vec<Annotation>> {
+
+    pub async fn search_annotations(
+        &self,
+        query: &SearchQuery,
+    ) -> color_eyre::Result<Vec<Annotation>> {
         let query: HashMap<String, serde_json::Value> =
             serde_json::from_str(&serde_json::to_string(&query)?)?;
         let url = Url::parse_with_params(
@@ -140,7 +152,7 @@ impl Hypothesis {
                 .map(|(k, v)| (k, v.to_string().replace('"', "")))
                 .collect::<Vec<_>>(),
         )?;
-        let text = self.client.get(url).send()?.text()?;
+        let text = self.client.get(url).send().await?.text().await?;
         #[derive(Deserialize, Debug, Clone, PartialEq)]
         struct SearchResult {
             rows: Vec<Annotation>,
@@ -156,7 +168,8 @@ impl Hypothesis {
     ///
     /// # Example
     /// ```
-    /// # fn main() -> color_eyre::Result<()> {
+    /// # #[tokio::main]
+    /// # async fn main() -> color_eyre::Result<()> {
     /// use hypothesis::Hypothesis;
     /// #    use hypothesis::annotations::AnnotationMaker;
     /// #    dotenv::dotenv()?;
@@ -169,20 +182,22 @@ impl Hypothesis {
     /// #                 uri: "http://example.com".to_string(),
     /// #                 group: group_id,
     /// #                 ..Default::default()
-    /// #             })?;
+    /// #             }).await?;
     /// #    let annotation_id = annotation.id.to_owned();    
-    /// let annotation = api.fetch_annotation(&annotation_id)?;
+    /// let annotation = api.fetch_annotation(&annotation_id).await?;
     /// assert_eq!(annotation.id, annotation_id);
-    /// #    api.delete_annotation(&annotation.id)?;
+    /// #    api.delete_annotation(&annotation.id).await?;
     /// #    Ok(())
     /// # }
     /// ```
-    pub fn fetch_annotation(&self, id: &AnnotationID) -> color_eyre::Result<Annotation> {
+    pub async fn fetch_annotation(&self, id: &AnnotationID) -> color_eyre::Result<Annotation> {
         let text = self
             .client
             .get(&format!("{}/annotations/{}", API_URL, id))
-            .send()?
-            .text()?;
+            .send()
+            .await?
+            .text()
+            .await?;
         let result = serde_json::from_str::<Annotation>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
             .suggestion("Make sure the given AnnotationID exists");
@@ -193,7 +208,8 @@ impl Hypothesis {
     ///
     /// # Example
     /// ```
-    /// # fn main() -> color_eyre::Result<()> {
+    /// # #[tokio::main]
+    /// # async fn main() -> color_eyre::Result<()> {
     /// use hypothesis::Hypothesis;
     /// #    use hypothesis::annotations::AnnotationMaker;
     /// #    dotenv::dotenv()?;
@@ -206,20 +222,23 @@ impl Hypothesis {
     /// #                 uri: "http://example.com".to_string(),
     /// #                 group: group_id,
     /// #                 ..Default::default()
-    /// #             })?;
+    /// #             }).await?;
     /// #    let annotation_id = annotation.id.to_owned();    
-    /// let deleted = api.delete_annotation(&annotation_id)?;
+    /// let deleted = api.delete_annotation(&annotation_id).await?;
     /// assert!(deleted);
-    /// assert!(api.fetch_annotation(&annotation_id).is_err());
+    /// assert!(api.fetch_annotation(&annotation_id).await.is_err());
     /// #    Ok(())
     /// # }
     /// ```
-    pub fn delete_annotation(&self, id: &AnnotationID) -> color_eyre::Result<bool> {
+
+    pub async fn delete_annotation(&self, id: &AnnotationID) -> color_eyre::Result<bool> {
         let text = self
             .client
             .delete(&format!("{}/annotations/{}", API_URL, id))
-            .send()?
-            .text()?;
+            .send()
+            .await?
+            .text()
+            .await?;
         #[derive(Deserialize, Debug, Clone, PartialEq)]
         struct DeletionResult {
             id: AnnotationID,
@@ -236,12 +255,15 @@ impl Hypothesis {
     /// Flag an annotation for review (moderation). The moderator of the group containing the
     /// annotation will be notified of the flag and can decide whether or not to hide the
     /// annotation. Note that flags persist and cannot be removed once they are set.
-    pub fn flag_annotation(&self, id: &AnnotationID) -> color_eyre::Result<()> {
+
+    pub async fn flag_annotation(&self, id: &AnnotationID) -> color_eyre::Result<()> {
         let text = self
             .client
             .put(&format!("{}/annotations/{}/flag", API_URL, id))
-            .send()?
-            .text()?;
+            .send()
+            .await?
+            .text()
+            .await?;
         let error = serde_json::from_str::<APIError>(&text);
         if let Ok(error) = error {
             Err(error).suggestion("Make sure the given AnnotationID exists")
@@ -254,12 +276,15 @@ impl Hypothesis {
     ///
     /// Hide an annotation. The authenticated user needs to have the moderate permission for the
     /// group that contains the annotation — this permission is granted to the user who created the group.
-    pub fn hide_annotation(&self, id: &AnnotationID) -> color_eyre::Result<()> {
+
+    pub async fn hide_annotation(&self, id: &AnnotationID) -> color_eyre::Result<()> {
         let text = self
             .client
             .put(&format!("{}/annotations/{}/hide", API_URL, id))
-            .send()?
-            .text()?;
+            .send()
+            .await?
+            .text()
+            .await?;
         let error = serde_json::from_str::<APIError>(&text);
         if let Ok(error) = error {
             Err(error).suggestion("Make sure the given AnnotationID exists")
@@ -272,12 +297,15 @@ impl Hypothesis {
     ///
     /// Show/"un-hide" an annotation. The authenticated user needs to have the moderate permission
     /// for the group that contains the annotation—this permission is granted to the user who created the group.
-    pub fn show_annotation(&self, id: &AnnotationID) -> color_eyre::Result<()> {
+
+    pub async fn show_annotation(&self, id: &AnnotationID) -> color_eyre::Result<()> {
         let text = self
             .client
             .delete(&format!("{}/annotations/{}/hide", API_URL, id))
-            .send()?
-            .text()?;
+            .send()
+            .await?
+            .text()
+            .await?;
         let error = serde_json::from_str::<APIError>(&text);
         if let Ok(error) = error {
             Err(error).suggestion("Make sure the given AnnotationID exists")
