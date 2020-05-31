@@ -2,7 +2,7 @@
 use crate::annotations::{Annotation, AnnotationMaker};
 use crate::groups::{Expand, Group};
 use crate::{AnnotationID, GroupID, Hypothesis};
-use futures::{executor::block_on, future::try_join_all};
+use futures::future::try_join_all;
 
 impl Hypothesis {
     pub async fn create_annotations(
@@ -13,7 +13,7 @@ impl Hypothesis {
             .iter()
             .map(|a| self.create_annotation(a))
             .collect();
-        Ok(block_on(async { try_join_all(futures).await })?)
+        Ok(async { try_join_all(futures).await }.await?)
     }
 
     pub async fn update_annotations(
@@ -26,7 +26,7 @@ impl Hypothesis {
             .zip(annotations.iter())
             .map(|(id, a)| self.update_annotation(id, a))
             .collect();
-        Ok(block_on(async { try_join_all(futures).await })?)
+        Ok(async { try_join_all(futures).await }.await?)
     }
 
     pub async fn fetch_annotations(
@@ -34,12 +34,12 @@ impl Hypothesis {
         ids: &[AnnotationID],
     ) -> color_eyre::Result<Vec<Annotation>> {
         let futures: Vec<_> = ids.iter().map(|id| self.fetch_annotation(id)).collect();
-        Ok(block_on(async { try_join_all(futures).await })?)
+        Ok(async { try_join_all(futures).await }.await?)
     }
 
     pub async fn delete_annotations(&self, ids: &[AnnotationID]) -> color_eyre::Result<Vec<bool>> {
         let futures: Vec<_> = ids.iter().map(|id| self.delete_annotation(id)).collect();
-        Ok(block_on(async { try_join_all(futures).await })?)
+        Ok(async { try_join_all(futures).await }.await?)
     }
 
     pub async fn create_groups(
@@ -52,7 +52,7 @@ impl Hypothesis {
             .zip(descriptions.iter())
             .map(|(name, description)| self.create_group(name, description.as_deref()))
             .collect();
-        Ok(block_on(async { try_join_all(futures).await })?)
+        Ok(async { try_join_all(futures).await }.await?)
     }
 
     pub async fn fetch_groups(
@@ -65,7 +65,7 @@ impl Hypothesis {
             .zip(expands.into_iter())
             .map(|(id, expand)| self.fetch_group(id, expand))
             .collect();
-        Ok(block_on(async { try_join_all(futures).await })?)
+        Ok(async { try_join_all(futures).await }.await?)
     }
 
     pub async fn update_groups(
@@ -82,6 +82,6 @@ impl Hypothesis {
                 self.update_group(id, name.as_deref(), description.as_deref())
             })
             .collect();
-        Ok(block_on(async { try_join_all(futures).await })?)
+        Ok(async { try_join_all(futures).await }.await?)
     }
 }
