@@ -330,19 +330,26 @@ impl Hypothesis {
 ///
 /// # Example
 /// ```
-/// # use hypothesis::annotations::AnnotationMaker;
-/// /// A simple annotation
+/// use hypothesis::annotations::{AnnotationMaker, Target, Selector};
+/// // A simple annotation
 /// let annotation_simple = AnnotationMaker {
-///     uri: "https://example.com".to_string(),
+///     uri: "https://www.example.com".to_string(),
 ///     text: "My new annotation".to_string(),
 ///     .. Default::default()
 /// };
 ///
-/// /// A complex annotation
+/// // A complex annotation
 /// let annotation_complex = AnnotationMaker {
-///     uri: "https://wikipedia.com".to_string(),
-///     
-///     .. Default::default()
+///      uri: "https://www.example.com".to_string(),
+///      text: "this is a comment".to_string(),
+///      target: Target {
+///          source: "https://www.example.com".to_string(),
+///          selector: vec![Selector::new_quote("exact text in website to highlight",
+///                                             "prefix of text",
+///                                             "suffix of text")],
+///      },
+///      tags: Some(vec!["tag1".to_string(), "tag2".to_string()]),
+///      .. Default::default()
 /// };
 /// ```
 #[derive(Serialize, Debug, Default, Clone)]
@@ -464,7 +471,7 @@ pub struct UserInfo {
 
 /// > While the API accepts arbitrary Annotation selectors in the target.selector property,
 /// > the Hypothesis client currently supports TextQuoteSelector, RangeSelector and TextPositionSelector selector.
-/// - [Hypothesis API v1.0.0](https://h.readthedocs.io/en/latest/api-reference/v1/#tag/annotations/paths/~1annotations/post)
+/// [Hypothesis API v1.0.0](https://h.readthedocs.io/en/latest/api-reference/v1/#tag/annotations/paths/~1annotations/post)
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct Target {
     /// The target URI for the annotation
@@ -479,23 +486,33 @@ pub struct Target {
 /// > Many Annotations refer to part of a resource, rather than all of it, as the Target.
 /// > We call that part of the resource a Segment (of Interest). A Selector is used to describe how
 /// > to determine the Segment from within the Source resource.
-/// - [Web Annotation Data Model - Selectors](https://www.w3.org/TR/annotation-model/#selectors)
+/// [Web Annotation Data Model - Selectors](https://www.w3.org/TR/annotation-model/#selectors)
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type")]
 pub enum Selector {
     TextQuoteSelector(TextQuoteSelector),
-    // > Selections made by users may be extensive and/or cross over internal boundaries in the
+    /// > Selections made by users may be extensive and/or cross over internal boundaries in the
     /// > representation, making it difficult to construct a single selector that robustly describes
     /// > the correct content. A Range Selector can be used to identify the beginning and the end of
     /// > the selection by using other Selectors. In this way, two points can be accurately identified
     /// > using the most appropriate selection mechanisms, and then linked together to form the selection.
     /// > The selection consists of everything from the beginning of the starting selector through to the
     /// > beginning of the ending selector, but not including it.
-    /// - [Web Annotation Data Model - Range Selector](https://www.w3.org/TR/annotation-model/#range-selector)
+    /// [Web Annotation Data Model - Range Selector](https://www.w3.org/TR/annotation-model/#range-selector)
     /// NOTE - the Hypothesis API doesn't seem to follow this standard for RangeSelector so this just returns a HashMap for now
     /// TODO: make RangeSelector a struct
     RangeSelector(HashMap<String, serde_json::Value>),
     TextPositionSelector(TextPositionSelector),
+}
+
+impl Selector {
+    pub fn new_quote(exact: &str, prefix: &str, suffix: &str) -> Selector {
+        Selector::TextQuoteSelector(TextQuoteSelector {
+            exact: exact.to_string(),
+            prefix: prefix.to_string(),
+            suffix: suffix.to_string(),
+        })
+    }
 }
 
 /// > This Selector describes a range of text by copying it, and including some of the text
@@ -504,7 +521,7 @@ pub enum Selector {
 ///
 /// > For example, if the document were again "abcdefghijklmnopqrstuvwxyz", one could select
 /// > "efg" by a prefix of "abcd", the match of "efg" and a suffix of "hijk".
-/// - [Web Annotation Data Model - Text Quote Selector](https://www.w3.org/TR/annotation-model/#text-quote-selector)
+/// [Web Annotation Data Model - Text Quote Selector](https://www.w3.org/TR/annotation-model/#text-quote-selector)
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct TextQuoteSelector {
     /// A copy of the text which is being selected, after normalization.
@@ -522,7 +539,7 @@ pub struct TextQuoteSelector {
 ///
 /// > For example, if the document was "abcdefghijklmnopqrstuvwxyz", the start was 4, and the end
 /// > was 7, then the selection would be "efg".
-/// - [Web Annotation Data Model - Text Position Selector](https://www.w3.org/TR/annotation-model/#text-position-selector)
+/// [Web Annotation Data Model - Text Position Selector](https://www.w3.org/TR/annotation-model/#text-position-selector)
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct TextPositionSelector {
     /// The starting position of the segment of text. The first character in the full text is
