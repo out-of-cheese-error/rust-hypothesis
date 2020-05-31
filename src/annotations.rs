@@ -436,7 +436,7 @@ pub struct Annotation {
     /// The text content of the annotation body (NOT the selected text in the document)
     pub text: String,
     /// Tags attached to annotation
-    pub tags: Option<Vec<String>>,
+    pub tags: Vec<String>,
     /// The unique identifier for the annotation's group
     pub group: GroupID,
     pub permissions: Permissions,
