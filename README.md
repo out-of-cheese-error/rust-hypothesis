@@ -43,9 +43,10 @@ TODO: Add a longer example here
 See the [CHANGELOG](CHANGELOG.md)
 
 ### Caveats / Todo:
-- Blocking API (nothing stopping async except my lack of experience with it though).
+- ~~Blocking API (nothing stopping async except my lack of experience with it though)~~ Async!.
 - Only supports APIKey authorization and hypothes.is authority (i.e. single users).
 - `Target.selector.RangeSelector` doesn't seem to follow [W3C standards](https://www.w3.org/TR/annotation-model/#range-selector). It's just a hashmap for now.
+- `Annotation` hypermedia links are stored as a hashmap, b/c I don't know all the possible values.
 - Need to figure out how `Document` works to properly document it (hah).
 - Can't delete a group after making it, can leave it though (maybe it's the same thing?)
 - No idea what `UserProfile.preferences` and `UserProfile.features` mean.
