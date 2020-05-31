@@ -1,4 +1,5 @@
 pub mod annotations;
+pub mod bulk;
 #[cfg(feature = "cli")]
 pub mod cli;
 pub mod errors;

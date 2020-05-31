@@ -107,7 +107,6 @@ impl Hypothesis {
     /// #    Ok(())
     /// # }    
     /// ```
-
     pub async fn fetch_group(
         &self,
         id: &GroupID,
