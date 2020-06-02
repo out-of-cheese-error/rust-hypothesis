@@ -1,36 +1,37 @@
 //! Bulk versions of single output API functions
 //! These are asynchronous and thus faster than using a loop around the single variants
-use crate::annotations::{Annotation, AnnotationMaker};
-use crate::groups::{Expand, Group};
-use crate::{AnnotationID, GroupID, Hypothesis};
 use futures::future::try_join_all;
+
+use crate::annotations::{Annotation, InputAnnotation};
+use crate::groups::{Expand, Group};
+use crate::Hypothesis;
 
 impl Hypothesis {
     /// Create many new annotations
     ///
     /// Posts multiple new annotation objects asynchronously to Hypothesis.
     /// Returns [`Annotation`](annotations/struct.Annotation.html)s as output.
-    /// See [`AnnotationMaker`'s](annotations/struct.AnnotationMaker.html) docs for examples on what you can add to an annotation.
+    /// See [`InputAnnotation`'s](annotations/struct.InputAnnotation.html) docs for examples on what you can add to an annotation.
     ///
     /// # Example
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> color_eyre::Result<()> {
     /// # use hypothesis::Hypothesis;
-    /// # use hypothesis::annotations::AnnotationMaker;
+    /// # use hypothesis::annotations::InputAnnotation;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// let annotation_makers = vec![
-    ///     AnnotationMaker {
+    ///     InputAnnotation {
     ///         text: "first".to_string(),
     ///         uri: "http://example.com".to_string(),
     ///         group: group_id.to_owned(),
     ///         ..Default::default()
     ///     },
-    ///     AnnotationMaker {
+    ///     InputAnnotation {
     ///         text: "second".to_string(),
     ///         uri: "http://example.com".to_string(),
     ///         group: group_id,   
@@ -46,7 +47,7 @@ impl Hypothesis {
     /// ```
     pub async fn create_annotations(
         &self,
-        annotations: &[AnnotationMaker],
+        annotations: &[InputAnnotation],
     ) -> color_eyre::Result<Vec<Annotation>> {
         let futures: Vec<_> = annotations
             .iter()
@@ -58,8 +59,8 @@ impl Hypothesis {
     /// Update many annotations at once
     pub async fn update_annotations(
         &self,
-        ids: &[AnnotationID],
-        annotations: &[AnnotationMaker],
+        ids: &[String],
+        annotations: &[InputAnnotation],
     ) -> color_eyre::Result<Vec<Annotation>> {
         let futures: Vec<_> = ids
             .iter()
@@ -70,16 +71,13 @@ impl Hypothesis {
     }
 
     /// Fetch multiple annotations by ID
-    pub async fn fetch_annotations(
-        &self,
-        ids: &[AnnotationID],
-    ) -> color_eyre::Result<Vec<Annotation>> {
+    pub async fn fetch_annotations(&self, ids: &[String]) -> color_eyre::Result<Vec<Annotation>> {
         let futures: Vec<_> = ids.iter().map(|id| self.fetch_annotation(id)).collect();
         Ok(async { try_join_all(futures).await }.await?)
     }
 
     /// Delete multiple annotations by ID
-    pub async fn delete_annotations(&self, ids: &[AnnotationID]) -> color_eyre::Result<Vec<bool>> {
+    pub async fn delete_annotations(&self, ids: &[String]) -> color_eyre::Result<Vec<bool>> {
         let futures: Vec<_> = ids.iter().map(|id| self.delete_annotation(id)).collect();
         Ok(async { try_join_all(futures).await }.await?)
     }
@@ -101,7 +99,7 @@ impl Hypothesis {
     /// Fetch multiple groups by ID
     pub async fn fetch_groups(
         &self,
-        ids: &[GroupID],
+        ids: &[String],
         expands: Vec<Vec<Expand>>,
     ) -> color_eyre::Result<Vec<Group>> {
         let futures: Vec<_> = ids
@@ -115,7 +113,7 @@ impl Hypothesis {
     /// Update multiple groups
     pub async fn update_groups(
         &self,
-        ids: &[GroupID],
+        ids: &[String],
         names: &[Option<String>],
         descriptions: &[Option<String>],
     ) -> color_eyre::Result<Vec<Group>> {

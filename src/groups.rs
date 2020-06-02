@@ -1,12 +1,14 @@
-use crate::errors::APIError;
-use crate::{is_default, GroupID, Hypothesis, API_URL};
+use std::collections::HashMap;
+
 use color_eyre::Help;
 use eyre::WrapErr;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 #[cfg(feature = "cli")]
 use structopt::StructOpt;
+
+use crate::errors::APIError;
+use crate::{is_default, Hypothesis, API_URL};
 
 impl Hypothesis {
     /// Retrieve a list of applicable Groups, filtered by authority and target document (document_uri).
@@ -29,7 +31,6 @@ impl Hypothesis {
     /// #    Ok(())
     /// # }
     /// ```
-
     pub async fn get_groups(&self, query: &GroupFilters) -> color_eyre::Result<Vec<Group>> {
         let query: HashMap<String, serde_json::Value> =
             serde_json::from_str(&serde_json::to_string(&query)?)?;
@@ -63,7 +64,6 @@ impl Hypothesis {
     /// #    Ok(())
     /// # }
     /// ```
-
     pub async fn create_group(
         &self,
         name: &str,
@@ -107,11 +107,7 @@ impl Hypothesis {
     /// #    Ok(())
     /// # }    
     /// ```
-    pub async fn fetch_group(
-        &self,
-        id: &GroupID,
-        expand: Vec<Expand>,
-    ) -> color_eyre::Result<Group> {
+    pub async fn fetch_group(&self, id: &str, expand: Vec<Expand>) -> color_eyre::Result<Group> {
         let params: HashMap<&str, Vec<String>> = if !expand.is_empty() {
             vec![(
                 "expand",
@@ -158,10 +154,9 @@ impl Hypothesis {
     /// #    Ok(())
     /// # }
     /// ```
-
     pub async fn update_group(
         &self,
-        id: &GroupID,
+        id: &str,
         name: Option<&str>,
         description: Option<&str>,
     ) -> color_eyre::Result<Group> {
@@ -182,7 +177,7 @@ impl Hypothesis {
             .await?;
         let result = serde_json::from_str::<Group>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the given GroupID exists");
+            .suggestion("Make sure the given Group ID exists");
         Ok(result?)
     }
 
@@ -205,8 +200,7 @@ impl Hypothesis {
     /// #    Ok(())
     /// # }
     /// ```
-
-    pub async fn get_group_members(&self, id: &GroupID) -> color_eyre::Result<Vec<GroupMember>> {
+    pub async fn get_group_members(&self, id: &str) -> color_eyre::Result<Vec<GroupMember>> {
         let text = self
             .client
             .get(&format!("{}/groups/{}/members", API_URL, id))
@@ -216,13 +210,12 @@ impl Hypothesis {
             .await?;
         let result = serde_json::from_str::<Vec<GroupMember>>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the given GroupID exists");
+            .suggestion("Make sure the given Group ID exists");
         Ok(result?)
     }
 
     /// Remove yourself from a group.
-
-    pub async fn leave_group(&self, id: &GroupID) -> color_eyre::Result<()> {
+    pub async fn leave_group(&self, id: &str) -> color_eyre::Result<()> {
         let text = self
             .client
             .delete(&format!("{}/groups/{}/members/me", API_URL, id))
@@ -232,7 +225,7 @@ impl Hypothesis {
             .await?;
         let error = serde_json::from_str::<APIError>(&text);
         if let Ok(error) = error {
-            Err(error).suggestion("Make sure the given GroupID exists")
+            Err(error).suggestion("Make sure the given Group ID exists")
         } else {
             Ok(())
         }
@@ -313,10 +306,10 @@ pub struct Org {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Group {
     /// Group ID
-    pub id: GroupID,
+    pub id: String,
     /// Authority-unique identifier that may be set for groups that are owned by a third-party authority.
     /// This field is currently present but unused for first-party-authority groups.
-    pub groupid: Option<GroupID>,
+    pub groupid: Option<String>,
     /// Group name
     pub name: String,
     pub links: Links,
@@ -335,7 +328,7 @@ pub struct Group {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct GroupMember {
     pub authority: String,
-    /// // string [ 3 .. 30 ] characters ^[A-Za-z0-9._]+$
+    /// string [ 3 .. 30 ] characters ^[A-Za-z0-9._]+$
     pub username: String,
     /// string^acct:.+$
     pub userid: String,

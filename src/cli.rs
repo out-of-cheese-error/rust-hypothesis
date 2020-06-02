@@ -1,16 +1,18 @@
-#[cfg(feature = "cli")]
-use crate::annotations::AnnotationMaker;
-use crate::annotations::{Order, SearchQuery, Sort};
-use crate::errors::CLIError;
-use crate::groups::{Expand, GroupFilters};
-use crate::{AnnotationID, GroupID, Hypothesis};
 use std::io::Write;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::{fs, io};
+
 use structopt::clap::AppSettings;
 use structopt::clap::Shell;
 use structopt::StructOpt;
+
+#[cfg(feature = "cli")]
+use crate::annotations::InputAnnotation;
+use crate::annotations::{Order, SearchQuery, Sort};
+use crate::errors::CLIError;
+use crate::groups::{Expand, GroupFilters};
+use crate::Hypothesis;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -49,7 +51,7 @@ pub enum AnnotationsCommand {
     /// Create a new annotation (TODO: add Target somehow)
     Create {
         #[structopt(flatten)]
-        annotation: AnnotationMaker,
+        annotation: InputAnnotation,
         /// write created annotation to this file in JSON format
         #[structopt(parse(from_os_str), short = "o", long)]
         file: Option<PathBuf>,
@@ -58,9 +60,9 @@ pub enum AnnotationsCommand {
     /// Update an existing annotation
     Update {
         /// unique ID of the annotation to update
-        id: AnnotationID,
+        id: String,
         #[structopt(flatten)]
-        annotation: AnnotationMaker,
+        annotation: InputAnnotation,
         /// write updated annotation to this file in JSON format
         #[structopt(parse(from_os_str), short = "o", long)]
         file: Option<PathBuf>,
@@ -77,7 +79,7 @@ pub enum AnnotationsCommand {
     /// Fetch annotation by ID
     Fetch {
         /// unique ID of the annotation to fetch
-        id: AnnotationID,
+        id: String,
         /// json file to write annotation to, writes to stdout if not given
         #[structopt(parse(from_os_str), short = "o", long)]
         file: Option<PathBuf>,
@@ -85,7 +87,7 @@ pub enum AnnotationsCommand {
     /// Delete annotation by ID
     Delete {
         /// unique ID of the annotation to delete
-        id: AnnotationID,
+        id: String,
     },
     /// Flag an annotation
     ///
@@ -94,7 +96,7 @@ pub enum AnnotationsCommand {
     /// annotation. Note that flags persist and cannot be removed once they are set.
     Flag {
         /// unique ID of the annotation to flag
-        id: AnnotationID,
+        id: String,
     },
     /// Hide an annotation
     ///
@@ -102,7 +104,7 @@ pub enum AnnotationsCommand {
     /// group that contains the annotation — this permission is granted to the user who created the group.
     Hide {
         /// unique ID of the annotation to hide
-        id: AnnotationID,
+        id: String,
     },
     /// Show an annotation
     ///
@@ -110,7 +112,7 @@ pub enum AnnotationsCommand {
     /// for the group that contains the annotation—this permission is granted to the user who created the group.
     Show {
         /// unique ID of the annotation to show
-        id: AnnotationID,
+        id: String,
     },
 }
 
@@ -138,7 +140,7 @@ pub enum GroupsCommand {
     /// Fetch a single Group resource.
     Fetch {
         /// unique Group ID
-        id: GroupID,
+        id: String,
         /// Expand the organization, scope, or both
         #[structopt(long, short)]
         expand: Vec<Expand>,
@@ -149,7 +151,7 @@ pub enum GroupsCommand {
     /// Update a Group resource.
     Update {
         /// unique Group ID
-        id: GroupID,
+        id: String,
         /// new group name
         #[structopt(long, short)]
         name: Option<String>,
@@ -167,13 +169,13 @@ pub enum GroupsCommand {
     /// public groups. Returned members are unsorted.
     Members {
         /// unique Group ID
-        id: GroupID,
+        id: String,
         /// json file to write groups members to, writes to stdout if not given
         #[structopt(parse(from_os_str), short = "o", long)]
         file: Option<PathBuf>,
     },
     /// Remove yourself from a group.
-    Leave { id: GroupID },
+    Leave { id: String },
 }
 
 #[derive(StructOpt, Debug)]

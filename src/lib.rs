@@ -37,24 +37,23 @@
 //! #### Examples
 //! ```rust no_run
 //! use hypothesis::Hypothesis;
-//! use hypothesis::annotations::{AnnotationMaker, Target, Selector, TextQuoteSelector};
+//! use hypothesis::annotations::{InputAnnotationBuilder, TargetBuilder, Selector, TextQuoteSelector};
 //!
 //! #[tokio::main]
 //! async fn main() -> color_eyre::Result<()> {
 //!    let api = Hypothesis::from_env()?;
 //!    let new_annotation = api.create_annotation(
-//!         &AnnotationMaker {
-//!             uri: "https://www.example.com".to_owned(),
-//!            text: "this is a comment".to_owned(),
-//!            target: Target {
-//!                source: "https://www.example.com".to_owned(),
-//!                selector: vec![Selector::new_quote("exact text in website to highlight",
+//!         &InputAnnotationBuilder::default()
+//!             .uri("https://www.example.com")
+//!             .text("this is a comment")
+//!             .target(TargetBuilder::default()
+//!                .source("https://www.example.com")
+//!                .selector(vec![Selector::new_quote("exact text in website to highlight",
 //!                                                   "prefix of text",
-//!                                                   "suffix of text")],
-//!            },
-//!            tags: Some(vec!["tag1".to_string(), "tag2".to_string()]),
-//!            .. Default::default()
-//!        }
+//!                                                   "suffix of text")])
+//!                .build()?)
+//!            .tags(vec!["tag1".to_string(), "tag2".to_string()])
+//!            .build()?
 //!    ).await?;
 //!    Ok(())
 //! }
@@ -77,6 +76,19 @@
 //! - No idea what `UserProfile.preferences` and `UserProfile.features` mean.
 //! - CLI just dumps output as JSON, this is fine right? Fancier CLIs can build on top of this (or use the crate directly)
 
+#[macro_use]
+extern crate derive_builder;
+#[macro_use]
+extern crate eyre;
+
+use std::str::FromStr;
+use std::string::ParseError;
+use std::{env, fmt};
+
+use color_eyre::Help;
+use reqwest::header;
+use serde::{Deserialize, Serialize};
+
 pub mod annotations;
 pub mod bulk;
 #[cfg(feature = "cli")]
@@ -85,16 +97,7 @@ pub mod errors;
 pub mod groups;
 pub mod profile;
 
-use color_eyre::Help;
-use reqwest::header;
-use serde::{Deserialize, Serialize};
-use std::str::FromStr;
-use std::string::ParseError;
-use std::{env, fmt};
-
 pub const API_URL: &str = "https://api.hypothes.is/api";
-pub type GroupID = String;
-pub type AnnotationID = String;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 pub struct UserAccountID(String);
@@ -121,6 +124,12 @@ impl fmt::Display for UserAccountID {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "UserID: {}", self.0)
+    }
+}
+
+impl Into<UserAccountID> for &UserAccountID {
+    fn into(self) -> UserAccountID {
+        UserAccountID(self.0.to_owned())
     }
 }
 
