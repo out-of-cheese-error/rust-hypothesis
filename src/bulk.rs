@@ -1,5 +1,3 @@
-//! Bulk versions of single output API functions
-//! These are asynchronous and thus faster than using a loop around the single variants
 use futures::future::try_join_all;
 
 use crate::annotations::{Annotation, InputAnnotation};
@@ -11,34 +9,33 @@ impl Hypothesis {
     ///
     /// Posts multiple new annotation objects asynchronously to Hypothesis.
     /// Returns [`Annotation`](annotations/struct.Annotation.html)s as output.
-    /// See [`InputAnnotation`'s](annotations/struct.InputAnnotation.html) docs for examples on what you can add to an annotation.
+    /// See [`InputAnnotation`'s](annotations/struct.InputAnnotation.html) docs for examples on what
+    /// you can add to an annotation.
     ///
     /// # Example
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> color_eyre::Result<()> {
     /// # use hypothesis::Hypothesis;
-    /// # use hypothesis::annotations::InputAnnotation;
+    /// # use hypothesis::annotations::InputAnnotationBuilder;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// let annotation_makers = vec![
-    ///     InputAnnotation {
-    ///         text: "first".to_string(),
-    ///         uri: "http://example.com".to_string(),
-    ///         group: group_id.to_owned(),
-    ///         ..Default::default()
-    ///     },
-    ///     InputAnnotation {
-    ///         text: "second".to_string(),
-    ///         uri: "http://example.com".to_string(),
-    ///         group: group_id,   
-    ///         ..Default::default()
-    ///     }
+    /// let input_annotations = vec![
+    ///     InputAnnotationBuilder::default()
+    ///         .text("first")
+    ///         .uri("http://example.com")
+    ///         .group(&group_id)
+    ///         .build()?,
+    ///     InputAnnotationBuilder::default()
+    ///         .text("second")
+    ///         .uri("http://example.com")
+    ///         .group(&group_id)   
+    ///         .build()?
     /// ];
-    /// let annotations = api.create_annotations(&annotation_makers).await?;
+    /// let annotations = api.create_annotations(&input_annotations).await?;
     /// assert_eq!(&annotations[0].text, "first");
     /// assert_eq!(&annotations[1].text, "second");
     /// #    api.delete_annotations(&annotations.into_iter().map(|a| a.id).collect::<Vec<_>>()).await?;

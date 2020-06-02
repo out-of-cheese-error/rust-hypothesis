@@ -91,7 +91,6 @@ impl Hypothesis {
     /// #    Ok(())
     /// # }
     /// ```
-
     pub async fn update_annotation(
         &self,
         id: &str,
@@ -220,7 +219,6 @@ impl Hypothesis {
     /// #    Ok(())
     /// # }
     /// ```
-
     pub async fn delete_annotation(&self, id: &str) -> color_eyre::Result<bool> {
         let text = self
             .client
