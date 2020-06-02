@@ -1,3 +1,4 @@
+//! Objects related to the command-line tool
 use std::io::Write;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -197,7 +198,7 @@ pub enum ProfileCommand {
 impl HypothesisCLI {
     pub async fn run(self, client: Hypothesis) -> color_eyre::Result<()> {
         match self {
-            HypothesisCLI::Annotations { cmd } => match cmd {
+            Self::Annotations { cmd } => match cmd {
                 AnnotationsCommand::Create { annotation, file } => {
                     let annotation = client.create_annotation(&annotation).await?;
                     println!("Annotation {} created", annotation.id);
@@ -261,7 +262,7 @@ impl HypothesisCLI {
                     println!("Annotation {} unhidden", id);
                 }
             },
-            HypothesisCLI::Groups { cmd } => match cmd {
+            Self::Groups { cmd } => match cmd {
                 GroupsCommand::List { filters, file } => {
                     let groups = client.get_groups(&filters).await?;
                     let writer: Box<dyn io::Write> = match file {
@@ -327,7 +328,7 @@ impl HypothesisCLI {
                     println!("You've left Group {}", id);
                 }
             },
-            HypothesisCLI::Profile { cmd } => match cmd {
+            Self::Profile { cmd } => match cmd {
                 ProfileCommand::User { file } => {
                     let profile = client.fetch_user_profile().await?;
                     let writer: Box<dyn io::Write> = match file {
@@ -349,9 +350,9 @@ impl HypothesisCLI {
                     }
                 }
             },
-            HypothesisCLI::Complete { shell } => {
+            Self::Complete { shell } => {
                 // Generates shell completions
-                HypothesisCLI::clap().gen_completions_to("hypothesis", shell, &mut io::stdout());
+                Self::clap().gen_completions_to("hypothesis", shell, &mut io::stdout());
             }
         }
         Ok(())
@@ -363,11 +364,11 @@ impl FromStr for Sort {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "created" => Ok(Sort::Created),
-            "updated" => Ok(Sort::Updated),
-            "id" => Ok(Sort::Id),
-            "group" => Ok(Sort::Group),
-            "user" => Ok(Sort::User),
+            "created" => Ok(Self::Created),
+            "updated" => Ok(Self::Updated),
+            "id" => Ok(Self::Id),
+            "group" => Ok(Self::Group),
+            "user" => Ok(Self::User),
             _ => Err(CLIError::ParseError {
                 name: "sort".into(),
                 types: vec![
@@ -384,7 +385,7 @@ impl FromStr for Sort {
 
 impl Sort {
     /// A list of possible variants in `&'static str` form
-    pub fn variants() -> [&'static str; 5] {
+    pub const fn variants() -> [&'static str; 5] {
         ["created", "updated", "id", "group", "user"]
     }
 }
@@ -394,8 +395,8 @@ impl FromStr for Order {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "desc" => Ok(Order::Desc),
-            "asc" => Ok(Order::Asc),
+            "desc" => Ok(Self::Desc),
+            "asc" => Ok(Self::Asc),
             _ => Err(CLIError::ParseError {
                 name: "order".into(),
                 types: vec!["asc".into(), "desc".into()],
@@ -406,7 +407,7 @@ impl FromStr for Order {
 
 impl Order {
     /// A list of possible variants in `&'static str` form
-    pub fn variants() -> [&'static str; 2] {
+    pub const fn variants() -> [&'static str; 2] {
         ["asc", "desc"]
     }
 }
@@ -416,8 +417,8 @@ impl FromStr for Expand {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "organization" => Ok(Expand::Organization),
-            "scopes" => Ok(Expand::Scopes),
+            "organization" => Ok(Self::Organization),
+            "scopes" => Ok(Self::Scopes),
             _ => Err(CLIError::ParseError {
                 name: "expand".into(),
                 types: vec!["organization".into(), "scopes".into()],
@@ -428,7 +429,7 @@ impl FromStr for Expand {
 
 impl Expand {
     /// A list of possible variants in `&'static str` form
-    pub fn variants() -> [&'static str; 2] {
+    pub const fn variants() -> [&'static str; 2] {
         ["organization", "scopes"]
     }
 }

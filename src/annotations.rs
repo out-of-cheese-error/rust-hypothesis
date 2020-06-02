@@ -1,304 +1,13 @@
+//! Objects related to the "annotations" endpoint
+
 use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
-use color_eyre::Help;
-use eyre::WrapErr;
-use reqwest::Url;
 use serde::{Deserialize, Serialize, Serializer};
 #[cfg(feature = "cli")]
 use structopt::StructOpt;
 
-use crate::errors::APIError;
-use crate::{is_default, Hypothesis, UserAccountID, API_URL};
-
-impl Hypothesis {
-    /// Create a new annotation
-    ///
-    /// Posts a new annotation object to Hypothesis.
-    /// Returns an [`Annotation`](annotations/struct.Annotation.html) as output.
-    /// See [`InputAnnotation`'s](annotations/struct.InputAnnotation.html) docs for examples on what you can add to an annotation.
-    ///
-    /// # Example
-    /// ```
-    /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
-    /// use hypothesis::Hypothesis;
-    /// use hypothesis::annotations::InputAnnotationBuilder;
-    /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
-    /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
-    ///
-    /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// let annotation = api.create_annotation(&InputAnnotationBuilder::default()
-    ///                     .text("string")
-    ///                     .uri("http://example.com")
-    ///                     .group(&group_id)
-    ///                     .build()?).await?;
-    /// assert_eq!(&annotation.text, "string");
-    /// #    api.delete_annotation(&annotation.id).await?;
-    /// #    Ok(())
-    /// # }
-    /// ```
-    pub async fn create_annotation(
-        &self,
-        annotation: &InputAnnotation,
-    ) -> color_eyre::Result<Annotation> {
-        let text = self
-            .client
-            .post(&format!("{}/annotations", API_URL))
-            .json(annotation)
-            .send()
-            .await?
-            .text()
-            .await?;
-        let result = serde_json::from_str::<Annotation>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure input fields are valid");
-        Ok(result?)
-    }
-
-    /// Update an existing annotation
-    ///
-    /// Change any field in an existing annotation. Returns the modified [`Annotation`](annotations/struct.Annotation.html)
-    /// Fields in  [`InputAnnotation`](annotations/struct.InputAnnotation.html) which are left as default are not modified in the annotation
-    ///
-    /// # Example
-    /// ```
-    /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
-    /// use hypothesis::Hypothesis;
-    /// use hypothesis::annotations::InputAnnotationBuilder;
-    /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
-    /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
-    /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// #     let annotation = api.create_annotation(&InputAnnotationBuilder::default()
-    /// #                        .text("string")
-    /// #                        .uri("http://example.com")
-    /// #                        .group(&group_id)
-    /// #                        .build()?).await?;
-    /// #    let annotation_id = annotation.id.to_owned();    
-    /// let updated_annotation = api.update_annotation(&annotation_id,
-    ///                             &InputAnnotationBuilder::default()
-    ///                                 .tags(vec!["tag1".to_string(), "tag2".to_string()])
-    ///                                 .text("New String")
-    ///                                 .build()?).await?;
-    ///  assert_eq!(updated_annotation.id, annotation_id);
-    ///  assert_eq!(&updated_annotation.text, "New String");
-    /// #    api.delete_annotation(&updated_annotation.id).await?;
-    /// #    Ok(())
-    /// # }
-    /// ```
-    pub async fn update_annotation(
-        &self,
-        id: &str,
-        annotation: &InputAnnotation,
-    ) -> color_eyre::Result<Annotation> {
-        let text = self
-            .client
-            .patch(&format!("{}/annotations/{}", API_URL, id))
-            .json(&annotation)
-            .send()
-            .await?
-            .text()
-            .await?;
-        let result = serde_json::from_str::<Annotation>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure input fields are valid");
-        Ok(result?)
-    }
-
-    /// Search for annotations with optional filters
-    ///
-    /// Returns a list of annotations matching the search query.
-    /// See  [`SearchQuery`](annotations/struct.SearchQuery.html) for more filtering options
-    ///
-    /// # Example
-    /// ```
-    /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
-    /// use hypothesis::{Hypothesis, UserAccountID};
-    /// use hypothesis::annotations::SearchQueryBuilder;
-    /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
-    /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// /// Search for your own annotations:
-    /// let search_query = SearchQueryBuilder::default().user(&api.user).build()?;
-    /// let search_results = api.search_annotations(&search_query).await?;
-    /// #     assert!(!search_results.is_empty());
-    /// #     Ok(())
-    /// # }
-    /// ```
-    pub async fn search_annotations(
-        &self,
-        query: &SearchQuery,
-    ) -> color_eyre::Result<Vec<Annotation>> {
-        let query: HashMap<String, serde_json::Value> =
-            serde_json::from_str(&serde_json::to_string(&query)?)?;
-        let url = Url::parse_with_params(
-            &format!("{}/search", API_URL),
-            &query
-                .into_iter()
-                .map(|(k, v)| (k, v.to_string().replace('"', "")))
-                .collect::<Vec<_>>(),
-        )?;
-        let text = self.client.get(url).send().await?.text().await?;
-        #[derive(Deserialize, Debug, Clone, PartialEq)]
-        struct SearchResult {
-            rows: Vec<Annotation>,
-            total: usize,
-        }
-        let result = serde_json::from_str::<SearchResult>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the query is valid");
-        Ok(result?.rows)
-    }
-
-    /// Fetch annotation by ID
-    ///
-    /// # Example
-    /// ```
-    /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
-    /// use hypothesis::Hypothesis;
-    /// #    use hypothesis::annotations::InputAnnotationBuilder;
-    /// #    dotenv::dotenv()?;
-    /// #    let username = dotenv::var("USERNAME")?;
-    /// #    let developer_key = dotenv::var("DEVELOPER_KEY")?;
-    /// #    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
-    /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// #    let annotation = api.create_annotation(&InputAnnotationBuilder::default()
-    /// #                       .text("string")
-    /// #                       .uri("http://example.com")
-    /// #                       .group(group_id).build()?).await?;
-    /// #    let annotation_id = annotation.id.to_owned();    
-    /// let annotation = api.fetch_annotation(&annotation_id).await?;
-    /// assert_eq!(annotation.id, annotation_id);
-    /// #    api.delete_annotation(&annotation.id).await?;
-    /// #    Ok(())
-    /// # }
-    /// ```
-    pub async fn fetch_annotation(&self, id: &str) -> color_eyre::Result<Annotation> {
-        let text = self
-            .client
-            .get(&format!("{}/annotations/{}", API_URL, id))
-            .send()
-            .await?
-            .text()
-            .await?;
-        let result = serde_json::from_str::<Annotation>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the given String exists");
-        Ok(result?)
-    }
-
-    /// Delete annotation by ID
-    ///
-    /// # Example
-    /// ```
-    /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
-    /// use hypothesis::Hypothesis;
-    /// #    use hypothesis::annotations::InputAnnotationBuilder;
-    /// #    dotenv::dotenv()?;
-    /// #    let username = dotenv::var("USERNAME")?;
-    /// #    let developer_key = dotenv::var("DEVELOPER_KEY")?;
-    /// #    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
-    /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// #    let annotation = api.create_annotation(&InputAnnotationBuilder::default()
-    /// #                       .text("string")
-    /// #                       .uri("http://example.com")
-    /// #                       .group(group_id).build()?).await?;
-    /// #    let annotation_id = annotation.id.to_owned();    
-    /// let deleted = api.delete_annotation(&annotation_id).await?;
-    /// assert!(deleted);
-    /// assert!(api.fetch_annotation(&annotation_id).await.is_err());
-    /// #    Ok(())
-    /// # }
-    /// ```
-    pub async fn delete_annotation(&self, id: &str) -> color_eyre::Result<bool> {
-        let text = self
-            .client
-            .delete(&format!("{}/annotations/{}", API_URL, id))
-            .send()
-            .await?
-            .text()
-            .await?;
-        #[derive(Deserialize, Debug, Clone, PartialEq)]
-        struct DeletionResult {
-            id: String,
-            deleted: bool,
-        }
-        let result = serde_json::from_str::<DeletionResult>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the given Annotation ID exists");
-        Ok(result?.deleted)
-    }
-
-    /// Flag an annotation
-    ///
-    /// Flag an annotation for review (moderation). The moderator of the group containing the
-    /// annotation will be notified of the flag and can decide whether or not to hide the
-    /// annotation. Note that flags persist and cannot be removed once they are set.
-    pub async fn flag_annotation(&self, id: &str) -> color_eyre::Result<()> {
-        let text = self
-            .client
-            .put(&format!("{}/annotations/{}/flag", API_URL, id))
-            .send()
-            .await?
-            .text()
-            .await?;
-        let error = serde_json::from_str::<APIError>(&text);
-        if let Ok(error) = error {
-            Err(error).suggestion("Make sure the given Annotation ID exists")
-        } else {
-            Ok(())
-        }
-    }
-
-    /// Hide an annotation
-    ///
-    /// Hide an annotation. The authenticated user needs to have the moderate permission for the
-    /// group that contains the annotation — this permission is granted to the user who created the group.
-    pub async fn hide_annotation(&self, id: &str) -> color_eyre::Result<()> {
-        let text = self
-            .client
-            .put(&format!("{}/annotations/{}/hide", API_URL, id))
-            .send()
-            .await?
-            .text()
-            .await?;
-        let error = serde_json::from_str::<APIError>(&text);
-        if let Ok(error) = error {
-            Err(error).suggestion("Make sure the given Annotation ID exists")
-        } else {
-            Ok(())
-        }
-    }
-
-    /// Show an annotation
-    ///
-    /// Show/"un-hide" an annotation. The authenticated user needs to have the moderate permission
-    /// for the group that contains the annotation—this permission is granted to the user who created the group.
-    pub async fn show_annotation(&self, id: &str) -> color_eyre::Result<()> {
-        let text = self
-            .client
-            .delete(&format!("{}/annotations/{}/hide", API_URL, id))
-            .send()
-            .await?
-            .text()
-            .await?;
-        let error = serde_json::from_str::<APIError>(&text);
-        if let Ok(error) = error {
-            Err(error).suggestion("Make sure the given Annotation ID exists")
-        } else {
-            Ok(())
-        }
-    }
-}
+use crate::{is_default, UserAccountID};
 
 #[cfg_attr(feature = "cli", derive(StructOpt))]
 #[cfg_attr(
@@ -384,6 +93,13 @@ pub struct InputAnnotation {
     pub references: Vec<String>,
 }
 
+impl InputAnnotationBuilder {
+    /// Builds a new `InputAnnotation`.
+    pub fn build(&self) -> color_eyre::Result<InputAnnotation> {
+        self.builder().map_err(|e| eyre!(e))
+    }
+}
+
 #[derive(Serialize, Debug, Default, Clone, PartialEq, Builder)]
 #[builder(build_fn(name = "builder"))]
 pub struct Document {
@@ -400,6 +116,7 @@ pub struct Document {
 }
 
 impl DocumentBuilder {
+    /// Builds a new `Document`.
     pub fn build(&self) -> color_eyre::Result<Document> {
         self.builder().map_err(|e| eyre!(e))
     }
@@ -426,13 +143,7 @@ pub struct Dc {
     pub identifier: Vec<String>,
 }
 
-impl InputAnnotationBuilder {
-    pub fn build(&self) -> color_eyre::Result<InputAnnotation> {
-        self.builder().map_err(|e| eyre!(e))
-    }
-}
-
-/// Full representation of Annotation resource and applicable relationships.
+/// Full representation of an Annotation resource and applicable relationships.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Annotation {
     /// Annotation ID
@@ -491,6 +202,7 @@ pub struct Target {
 }
 
 impl TargetBuilder {
+    /// Builds a new `Target`.
     pub fn build(&self) -> color_eyre::Result<Target> {
         self.builder().map_err(|e| eyre!(e))
     }
@@ -519,8 +231,8 @@ pub enum Selector {
 }
 
 impl Selector {
-    pub fn new_quote(exact: &str, prefix: &str, suffix: &str) -> Selector {
-        Selector::TextQuoteSelector(TextQuoteSelector {
+    pub fn new_quote(exact: &str, prefix: &str, suffix: &str) -> Self {
+        Self::TextQuoteSelector(TextQuoteSelector {
             exact: exact.to_string(),
             prefix: prefix.to_string(),
             suffix: suffix.to_string(),
@@ -591,7 +303,7 @@ impl Default for Order {
     }
 }
 
-/// See [the Hypothesis API docs](https://h.readthedocs.io/en/latest/api-reference/v1/#tag/annotations/paths/~1search/get) for more details on using these fields
+/// Options to filter and sort search results. See [the Hypothesis API docs](https://h.readthedocs.io/en/latest/api-reference/v1/#tag/annotations/paths/~1search/get) for more details on using these fields
 #[cfg_attr(feature = "cli", derive(StructOpt))]
 #[derive(Serialize, Debug, Clone, PartialEq, Builder, Default)]
 #[builder(build_fn(name = "builder"), default)]
@@ -691,6 +403,7 @@ pub struct SearchQuery {
 }
 
 impl SearchQueryBuilder {
+    /// Builds a new `SearchQuery`.
     pub fn build(&self) -> color_eyre::Result<SearchQuery> {
         self.builder().map_err(|e| eyre!(e))
     }

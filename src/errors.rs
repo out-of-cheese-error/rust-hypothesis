@@ -1,11 +1,15 @@
-use serde::{Deserialize, Serialize};
+//! API and CLI specific errors
 use std::fmt;
+
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Errors returned from the Hypothesis API
 #[derive(Error, Serialize, Deserialize, Debug, Default, Clone)]
 pub struct APIError {
+    /// API returned status
     pub status: String,
+    /// Cause of failure
     pub reason: String,
 }
 
