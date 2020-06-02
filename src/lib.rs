@@ -29,7 +29,7 @@
 //! Add to your Cargo.toml:
 //! ```toml
 //! [dependencies]
-//! hypothesis = {version = "0.3.0", default-features = false}
+//! hypothesis = {version = "0.4.0", default-features = false}
 //! # For a tokio runtime:
 //! tokio = { version = "0.2", features = ["macros"] }
 //! ```
@@ -57,7 +57,7 @@
 //!     Ok(())
 //! }
 //! ```
-//! See the documentation of the API struct ([`Hypothesis`](struct.Hypothesis.html)) for a list of possible queries.
+//! See the documentation of the API struct ([`Hypothesis`](https://docs.rs/crate/hypothesis/struct.Hypothesis.html)) for a list of possible queries.
 //! Use bulk functions to perform multiple actions - e.g. `api.fetch_annotations` instead of a loop around `api.fetch_annotation`.
 //!
 //! Check the [documentation](https://docs.rs/crate/hypothesis) for more usage examples.

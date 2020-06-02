@@ -4,17 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Master
+## 0.4.0 - 2020-06-02
+### Changed
 * Switched `AnnotationID` and `GroupID` back to Strings and &str 
 * Renamed `AnnotationMaker` to `InputAnnotation`
-* made Builders for `InputAnnotation`, `Target, Document`, and `SearchQuery` using `derive_builder`
 
-## [0.3.0] - 2020-05-31
+### Added
+* made Builders for `InputAnnotation`, `Target, Document`, and `SearchQuery` using `derive_builder`
+* better docs
+
+## 0.3.0 - 2020-05-31
 * everything is asynchronous.
 * added a bulk API for modifying many things at once.
 * `AnnotationMaker` tags are optional to allow for removing a tag during update
 
-## [0.2.0] - 2020-05-28
+## 0.2.0 - 2020-05-28
 Works both as a crate and a binary now!
 ### Added
 * a CLI version under a feature flag "cli"
@@ -25,6 +29,3 @@ License to BSD-2-Clause (consistent with hypothesis/h)
 ## 0.1.0 - 2020-05-27
 First version! Complete API for annotations, groups and profile. 
 Some missing docs and weird edges, listed in Caveats/Todos in the README.
-
-[0.3.0]: https://github.com/out-of-cheese-error/the-way/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/out-of-cheese-error/the-way/releases/tag/v0.2.0

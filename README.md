@@ -31,37 +31,35 @@ exec zsh
 Add to your Cargo.toml:
 ```toml
 [dependencies]
-hypothesis = {version = "0.3.0", default-features = false}
-# For a tokio runtime:
+hypothesis = {version = "0.4.0", default-features = false}
 tokio = { version = "0.2", features = ["macros"] }
 ```
 
 #### Examples
-```rust
+```rust no_run
 use hypothesis::Hypothesis;
-use hypothesis::annotations::{InputAnnotationBuilder, TargetBuilder, Selector, TextQuoteSelector};
+use hypothesis::annotations::{InputAnnotationBuilder, TargetBuilder, Selector};
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
-   let api = Hypothesis::from_env()?;
-   let new_annotation = api.create_annotation(
-        &InputAnnotationBuilder::default().uri("https://www.example.com"),
-           text: "this is a comment".to_owned(),
-           target: Target {
-               source: "https://www.example.com".to_owned(),
-               selector: vec![Selector::new_quote("exact text in website to highlight",
+    let api = Hypothesis::from_env()?;
+    let new_annotation = InputAnnotationBuilder::default()
+            .uri("https://www.example.com")
+            .text("this is a comment")
+            .target(TargetBuilder::default()
+               .source("https://www.example.com")
+               .selector(vec![Selector::new_quote("exact text in website to highlight",
                                                   "prefix of text",
-                                                  "suffix of text")],
-           },
-           tags: Some(vec!["tag1".to_string(), "tag2".to_string()]),
-           .. Default::default()
-       }
-   ).await?;
-   Ok(())
+                                                  "suffix of text")])
+               .build()?)
+           .tags(vec!["tag1".to_string(), "tag2".to_string()])
+           .build()?;
+    api.create_annotation(&new_annotation).await?;
+    Ok(())
 }
 ```
-Use bulk functions to perform multiple actions - e.g. `api.fetch_annotations` instead of a
-loop around `api.fetch_annotation`.
+See the documentation of the API struct ([`Hypothesis`](https://docs.rs/crate/hypothesis/struct.Hypothesis.html)) for a list of possible queries.
+Use bulk functions to perform multiple actions - e.g. `api.fetch_annotations` instead of a loop around `api.fetch_annotation`.
 
 Check the [documentation](https://docs.rs/crate/hypothesis) for more usage examples.
 
@@ -69,7 +67,6 @@ Check the [documentation](https://docs.rs/crate/hypothesis) for more usage examp
 See the [CHANGELOG](CHANGELOG.md)
 
 ### Caveats / Todo:
-- ~~Blocking API (nothing stopping async except my lack of experience with it though)~~ Async from v0.3!.
 - Only supports APIKey authorization and hypothes.is authority (i.e. single users).
 - `Target.selector.RangeSelector` doesn't seem to follow [W3C standards](https://www.w3.org/TR/annotation-model/#range-selector). It's just a hashmap for now.
 - `Annotation` hypermedia links are stored as a hashmap, b/c I don't know all the possible values.
