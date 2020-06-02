@@ -39,14 +39,13 @@ tokio = { version = "0.2", features = ["macros"] }
 #### Examples
 ```rust
 use hypothesis::Hypothesis;
-use hypothesis::annotations::{AnnotationMaker, Target, Selector, TextQuoteSelector};
+use hypothesis::annotations::{InputAnnotationBuilder, TargetBuilder, Selector, TextQuoteSelector};
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
    let api = Hypothesis::from_env()?;
    let new_annotation = api.create_annotation(
-        &AnnotationMaker {
-            uri: "https://www.example.com".to_owned(),
+        &InputAnnotationBuilder::default().uri("https://www.example.com"),
            text: "this is a comment".to_owned(),
            target: Target {
                source: "https://www.example.com".to_owned(),

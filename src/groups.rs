@@ -1,249 +1,18 @@
-use crate::errors::APIError;
-use crate::{is_default, GroupID, Hypothesis, API_URL};
-use color_eyre::Help;
-use eyre::WrapErr;
-use reqwest::Url;
+//! Objects related to the "groups" endpoint
+
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 #[cfg(feature = "cli")]
 use structopt::StructOpt;
 
-impl Hypothesis {
-    /// Retrieve a list of applicable Groups, filtered by authority and target document (document_uri).
-    /// Also retrieve user's private Groups.
-    ///
-    /// # Example
-    /// ```
-    /// #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
-    /// use hypothesis::Hypothesis;
-    /// use hypothesis::groups::GroupFilters;
-    /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
-    ///
-    /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// /// Get all Groups belonging to user
-    /// let groups = api.get_groups(&GroupFilters::default()).await?;
-    /// #    assert!(!groups.is_empty());
-    /// #    Ok(())
-    /// # }
-    /// ```
-
-    pub async fn get_groups(&self, query: &GroupFilters) -> color_eyre::Result<Vec<Group>> {
-        let query: HashMap<String, serde_json::Value> =
-            serde_json::from_str(&serde_json::to_string(&query)?)?;
-        let url = Url::parse_with_params(
-            &format!("{}/groups", API_URL),
-            &query
-                .into_iter()
-                .map(|(k, v)| (k, v.to_string().replace('"', "")))
-                .collect::<Vec<_>>(),
-        )?;
-        let text = self.client.get(url).send().await?.text().await?;
-        let result = serde_json::from_str::<Vec<Group>>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure input filters are valid");
-        Ok(result?)
-    }
-
-    /// Create a new, private group for the currently-authenticated user.
-    ///
-    /// # Example
-    /// ```no_run
-    /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
-    /// use hypothesis::Hypothesis;
-    /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
-    ///
-    /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// let group = api.create_group("my_group", Some("a test group")).await?;
-    /// #    Ok(())
-    /// # }
-    /// ```
-
-    pub async fn create_group(
-        &self,
-        name: &str,
-        description: Option<&str>,
-    ) -> color_eyre::Result<Group> {
-        let mut params = HashMap::new();
-        params.insert("name", name);
-        if let Some(description) = description {
-            params.insert("description", description);
-        }
-        let text = self
-            .client
-            .post(&format!("{}/groups", API_URL))
-            .json(&params)
-            .send()
-            .await?
-            .text()
-            .await?;
-        let result = serde_json::from_str::<Group>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("OutOfCheeseError: Redo from start.");
-        Ok(result?)
-    }
-
-    /// Fetch a single Group resource.
-    ///
-    /// # Example
-    /// ```
-    /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
-    /// use hypothesis::Hypothesis;
-    /// use hypothesis::groups::Expand;
-    /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
-    /// #     let group_id = dotenv::var("TEST_GROUP_ID")?;
-    ///
-    /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// /// Expands organization into a struct
-    /// let group = api.fetch_group(&group_id, vec![Expand::Organization]).await?;
-    /// #    Ok(())
-    /// # }    
-    /// ```
-    pub async fn fetch_group(
-        &self,
-        id: &GroupID,
-        expand: Vec<Expand>,
-    ) -> color_eyre::Result<Group> {
-        let params: HashMap<&str, Vec<String>> = if !expand.is_empty() {
-            vec![(
-                "expand",
-                expand
-                    .into_iter()
-                    .map(|e| serde_json::to_string(&e))
-                    .collect::<Result<_, _>>()?,
-            )]
-            .into_iter()
-            .collect()
-        } else {
-            HashMap::new()
-        };
-        let text = self
-            .client
-            .get(&format!("{}/groups/{}", API_URL, id))
-            .json(&params)
-            .send()
-            .await?
-            .text()
-            .await?;
-        let result = serde_json::from_str::<Group>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the given GroupId exists");
-        Ok(result?)
-    }
-
-    /// Update a Group resource.
-    ///
-    /// # Example
-    /// ```no_run
-    /// #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
-    /// use hypothesis::Hypothesis;
-    /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
-    /// #     let group_id = dotenv::var("TEST_GROUP_ID")?;
-    ///
-    /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// let group = api.update_group(&group_id, Some("new_group_name"), None).await?;
-    /// assert_eq!(&group.name, "new_group_name");
-    /// assert_eq!(group.id, group_id);
-    /// #    Ok(())
-    /// # }
-    /// ```
-
-    pub async fn update_group(
-        &self,
-        id: &GroupID,
-        name: Option<&str>,
-        description: Option<&str>,
-    ) -> color_eyre::Result<Group> {
-        let mut params = vec![];
-        if let Some(name) = name {
-            params.push(("name", name));
-        }
-        if let Some(description) = description {
-            params.push(("description", description));
-        }
-        let text = self
-            .client
-            .patch(&format!("{}/groups/{}", API_URL, id))
-            .form(&params)
-            .send()
-            .await?
-            .text()
-            .await?;
-        let result = serde_json::from_str::<Group>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the given GroupID exists");
-        Ok(result?)
-    }
-
-    /// Fetch a list of all members (users) in a group. Returned user resource only contains public-facing user data.
-    /// Authenticated user must have read access to the group. Does not require authentication for reading members of
-    /// public groups. Returned members are unsorted.
-    ///
-    /// # Example
-    /// ```
-    /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
-    /// use hypothesis::Hypothesis;
-    /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
-    /// #     let group_id = dotenv::var("TEST_GROUP_ID")?;
-    ///
-    /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// let members = api.get_group_members(&group_id).await?;
-    /// #    Ok(())
-    /// # }
-    /// ```
-
-    pub async fn get_group_members(&self, id: &GroupID) -> color_eyre::Result<Vec<GroupMember>> {
-        let text = self
-            .client
-            .get(&format!("{}/groups/{}/members", API_URL, id))
-            .send()
-            .await?
-            .text()
-            .await?;
-        let result = serde_json::from_str::<Vec<GroupMember>>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the given GroupID exists");
-        Ok(result?)
-    }
-
-    /// Remove yourself from a group.
-
-    pub async fn leave_group(&self, id: &GroupID) -> color_eyre::Result<()> {
-        let text = self
-            .client
-            .delete(&format!("{}/groups/{}/members/me", API_URL, id))
-            .send()
-            .await?
-            .text()
-            .await?;
-        let error = serde_json::from_str::<APIError>(&text);
-        if let Ok(error) = error {
-            Err(error).suggestion("Make sure the given GroupID exists")
-        } else {
-            Ok(())
-        }
-    }
-}
+use crate::is_default;
 
 /// Which field to expand
 #[derive(Serialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Expand {
+    /// Expand `organization` field to `Org`
     Organization,
+    /// Expand `scopes` field to `Scope`
     Scopes,
 }
 
@@ -269,6 +38,7 @@ pub struct GroupFilters {
     pub expand: Vec<Expand>,
 }
 
+/// URL to the group's main (activity) page
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Links {
     /// URL to the group's main (activity) page
@@ -283,14 +53,22 @@ pub struct Scope {
     pub uri_patterns: Vec<String>,
 }
 
+/// Group type
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Type {
+    /// Only creator can view and edit
     Private,
+    /// Anyone can view and edit
     Open,
+    /// More than one user can view and edit
     Restricted,
 }
 
+/// Information about an organization
+/// Can be just the organization ID,
+/// an `Org` struct,
+/// or None if user is not authorized to access this organization
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum Organization {
@@ -300,25 +78,30 @@ pub enum Organization {
     Organization(Option<Org>),
 }
 
+/// Information about an organization
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Org {
+    /// Organization ID
     pub id: String,
     /// true if this organization is the default organization for the current authority
     pub default: bool,
     /// URI to logo image; may be null if no logo exists
     pub logo: Option<String>,
+    /// Organization name
     pub name: String,
 }
 
+/// Information returned about a Group resource
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Group {
     /// Group ID
-    pub id: GroupID,
+    pub id: String,
     /// Authority-unique identifier that may be set for groups that are owned by a third-party authority.
     /// This field is currently present but unused for first-party-authority groups.
-    pub groupid: Option<GroupID>,
+    pub groupid: Option<String>,
     /// Group name
     pub name: String,
+    /// URL to the group's main (activity) page
     pub links: Links,
     /// The organization to which this group belongs.
     pub organization: Organization,
@@ -328,14 +111,17 @@ pub struct Group {
     /// Whether or not this group has URL restrictions for documents that may be annotated within it.
     /// Non-scoped groups allow annotation to documents at any URL
     pub scoped: bool,
+    /// Is the groyp private, open, or restricted
     #[serde(rename = "type")]
     pub group_type: Type,
 }
 
+/// Information about another user
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct GroupMember {
+pub struct Member {
+    /// "hypothes.is"
     pub authority: String,
-    /// // string [ 3 .. 30 ] characters ^[A-Za-z0-9._]+$
+    /// string [ 3 .. 30 ] characters ^[A-Za-z0-9._]+$
     pub username: String,
     /// string^acct:.+$
     pub userid: String,

@@ -31,3 +31,4 @@ dotenv = {version = "0.15.0"}
 structopt = {version = "0.3.14", optional = true}
 tokio = { version = "0.2", features = ["macros"] }
 futures = "0.3.5"
+derive_builder = "0.9.0"

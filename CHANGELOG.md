@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Master
+* Switched `AnnotationID` and `GroupID` back to Strings and &str 
+* Renamed `AnnotationMaker` to `InputAnnotation`
+* made Builders for `InputAnnotation`, `Target, Document`, and `SearchQuery` using `derive_builder`
+
 ## [0.3.0] - 2020-05-31
 * everything is asynchronous.
 * added a bulk API for modifying many things at once.

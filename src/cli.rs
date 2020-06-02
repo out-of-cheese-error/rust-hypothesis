@@ -1,16 +1,19 @@
-#[cfg(feature = "cli")]
-use crate::annotations::AnnotationMaker;
-use crate::annotations::{Order, SearchQuery, Sort};
-use crate::errors::CLIError;
-use crate::groups::{Expand, GroupFilters};
-use crate::{AnnotationID, GroupID, Hypothesis};
+//! Objects related to the command-line tool
 use std::io::Write;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::{fs, io};
+
 use structopt::clap::AppSettings;
 use structopt::clap::Shell;
 use structopt::StructOpt;
+
+#[cfg(feature = "cli")]
+use crate::annotations::InputAnnotation;
+use crate::annotations::{Order, SearchQuery, Sort};
+use crate::errors::CLIError;
+use crate::groups::{Expand, GroupFilters};
+use crate::Hypothesis;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -49,7 +52,7 @@ pub enum AnnotationsCommand {
     /// Create a new annotation (TODO: add Target somehow)
     Create {
         #[structopt(flatten)]
-        annotation: AnnotationMaker,
+        annotation: InputAnnotation,
         /// write created annotation to this file in JSON format
         #[structopt(parse(from_os_str), short = "o", long)]
         file: Option<PathBuf>,
@@ -58,9 +61,9 @@ pub enum AnnotationsCommand {
     /// Update an existing annotation
     Update {
         /// unique ID of the annotation to update
-        id: AnnotationID,
+        id: String,
         #[structopt(flatten)]
-        annotation: AnnotationMaker,
+        annotation: InputAnnotation,
         /// write updated annotation to this file in JSON format
         #[structopt(parse(from_os_str), short = "o", long)]
         file: Option<PathBuf>,
@@ -77,7 +80,7 @@ pub enum AnnotationsCommand {
     /// Fetch annotation by ID
     Fetch {
         /// unique ID of the annotation to fetch
-        id: AnnotationID,
+        id: String,
         /// json file to write annotation to, writes to stdout if not given
         #[structopt(parse(from_os_str), short = "o", long)]
         file: Option<PathBuf>,
@@ -85,7 +88,7 @@ pub enum AnnotationsCommand {
     /// Delete annotation by ID
     Delete {
         /// unique ID of the annotation to delete
-        id: AnnotationID,
+        id: String,
     },
     /// Flag an annotation
     ///
@@ -94,7 +97,7 @@ pub enum AnnotationsCommand {
     /// annotation. Note that flags persist and cannot be removed once they are set.
     Flag {
         /// unique ID of the annotation to flag
-        id: AnnotationID,
+        id: String,
     },
     /// Hide an annotation
     ///
@@ -102,7 +105,7 @@ pub enum AnnotationsCommand {
     /// group that contains the annotation — this permission is granted to the user who created the group.
     Hide {
         /// unique ID of the annotation to hide
-        id: AnnotationID,
+        id: String,
     },
     /// Show an annotation
     ///
@@ -110,7 +113,7 @@ pub enum AnnotationsCommand {
     /// for the group that contains the annotation—this permission is granted to the user who created the group.
     Show {
         /// unique ID of the annotation to show
-        id: AnnotationID,
+        id: String,
     },
 }
 
@@ -138,7 +141,7 @@ pub enum GroupsCommand {
     /// Fetch a single Group resource.
     Fetch {
         /// unique Group ID
-        id: GroupID,
+        id: String,
         /// Expand the organization, scope, or both
         #[structopt(long, short)]
         expand: Vec<Expand>,
@@ -149,7 +152,7 @@ pub enum GroupsCommand {
     /// Update a Group resource.
     Update {
         /// unique Group ID
-        id: GroupID,
+        id: String,
         /// new group name
         #[structopt(long, short)]
         name: Option<String>,
@@ -167,13 +170,13 @@ pub enum GroupsCommand {
     /// public groups. Returned members are unsorted.
     Members {
         /// unique Group ID
-        id: GroupID,
+        id: String,
         /// json file to write groups members to, writes to stdout if not given
         #[structopt(parse(from_os_str), short = "o", long)]
         file: Option<PathBuf>,
     },
     /// Remove yourself from a group.
-    Leave { id: GroupID },
+    Leave { id: String },
 }
 
 #[derive(StructOpt, Debug)]
@@ -195,7 +198,7 @@ pub enum ProfileCommand {
 impl HypothesisCLI {
     pub async fn run(self, client: Hypothesis) -> color_eyre::Result<()> {
         match self {
-            HypothesisCLI::Annotations { cmd } => match cmd {
+            Self::Annotations { cmd } => match cmd {
                 AnnotationsCommand::Create { annotation, file } => {
                     let annotation = client.create_annotation(&annotation).await?;
                     println!("Annotation {} created", annotation.id);
@@ -259,7 +262,7 @@ impl HypothesisCLI {
                     println!("Annotation {} unhidden", id);
                 }
             },
-            HypothesisCLI::Groups { cmd } => match cmd {
+            Self::Groups { cmd } => match cmd {
                 GroupsCommand::List { filters, file } => {
                     let groups = client.get_groups(&filters).await?;
                     let writer: Box<dyn io::Write> = match file {
@@ -325,7 +328,7 @@ impl HypothesisCLI {
                     println!("You've left Group {}", id);
                 }
             },
-            HypothesisCLI::Profile { cmd } => match cmd {
+            Self::Profile { cmd } => match cmd {
                 ProfileCommand::User { file } => {
                     let profile = client.fetch_user_profile().await?;
                     let writer: Box<dyn io::Write> = match file {
@@ -347,9 +350,9 @@ impl HypothesisCLI {
                     }
                 }
             },
-            HypothesisCLI::Complete { shell } => {
+            Self::Complete { shell } => {
                 // Generates shell completions
-                HypothesisCLI::clap().gen_completions_to("hypothesis", shell, &mut io::stdout());
+                Self::clap().gen_completions_to("hypothesis", shell, &mut io::stdout());
             }
         }
         Ok(())
@@ -361,11 +364,11 @@ impl FromStr for Sort {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "created" => Ok(Sort::Created),
-            "updated" => Ok(Sort::Updated),
-            "id" => Ok(Sort::Id),
-            "group" => Ok(Sort::Group),
-            "user" => Ok(Sort::User),
+            "created" => Ok(Self::Created),
+            "updated" => Ok(Self::Updated),
+            "id" => Ok(Self::Id),
+            "group" => Ok(Self::Group),
+            "user" => Ok(Self::User),
             _ => Err(CLIError::ParseError {
                 name: "sort".into(),
                 types: vec![
@@ -382,7 +385,7 @@ impl FromStr for Sort {
 
 impl Sort {
     /// A list of possible variants in `&'static str` form
-    pub fn variants() -> [&'static str; 5] {
+    pub const fn variants() -> [&'static str; 5] {
         ["created", "updated", "id", "group", "user"]
     }
 }
@@ -392,8 +395,8 @@ impl FromStr for Order {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "desc" => Ok(Order::Desc),
-            "asc" => Ok(Order::Asc),
+            "desc" => Ok(Self::Desc),
+            "asc" => Ok(Self::Asc),
             _ => Err(CLIError::ParseError {
                 name: "order".into(),
                 types: vec!["asc".into(), "desc".into()],
@@ -404,7 +407,7 @@ impl FromStr for Order {
 
 impl Order {
     /// A list of possible variants in `&'static str` form
-    pub fn variants() -> [&'static str; 2] {
+    pub const fn variants() -> [&'static str; 2] {
         ["asc", "desc"]
     }
 }
@@ -414,8 +417,8 @@ impl FromStr for Expand {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "organization" => Ok(Expand::Organization),
-            "scopes" => Ok(Expand::Scopes),
+            "organization" => Ok(Self::Organization),
+            "scopes" => Ok(Self::Scopes),
             _ => Err(CLIError::ParseError {
                 name: "expand".into(),
                 types: vec!["organization".into(), "scopes".into()],
@@ -426,7 +429,7 @@ impl FromStr for Expand {
 
 impl Expand {
     /// A list of possible variants in `&'static str` form
-    pub fn variants() -> [&'static str; 2] {
+    pub const fn variants() -> [&'static str; 2] {
         ["organization", "scopes"]
     }
 }

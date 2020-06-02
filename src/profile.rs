@@ -1,77 +1,15 @@
-use crate::errors::APIError;
-use crate::groups::Group;
-use crate::{Hypothesis, UserAccountID, API_URL};
-use color_eyre::Help;
-use eyre::WrapErr;
-use serde::{Deserialize, Serialize};
+//! Objects related to the "profile" endpoint
+
 use std::collections::HashMap;
 
-impl Hypothesis {
-    /// Fetch profile information for the currently-authenticated user.
-    ///
-    /// # Example
-    /// ```
-    /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
-    /// use hypothesis::Hypothesis;
-    /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
-    /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// let profile = api.fetch_user_profile().await?;
-    /// assert!(profile.userid.is_some());
-    /// assert_eq!(profile.userid.unwrap(), api.user);
-    /// #     Ok(())
-    /// # }
-    /// ```
+use serde::{Deserialize, Serialize};
 
-    pub async fn fetch_user_profile(&self) -> color_eyre::Result<UserProfile> {
-        let text = self
-            .client
-            .get(&format!("{}/profile", API_URL))
-            .send()
-            .await?
-            .text()
-            .await?;
-        let result = serde_json::from_str::<UserProfile>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("OutOfCheeseError: Redo from start.");
-        Ok(result?)
-    }
-
-    /// Fetch the groups for which the currently-authenticated user is a member.
-    /// # Example
-    /// ```
-    /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
-    /// use hypothesis::Hypothesis;
-    /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
-    /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// let groups = api.fetch_user_groups().await?;
-    /// #     Ok(())
-    /// # }
-    /// ```
-
-    pub async fn fetch_user_groups(&self) -> color_eyre::Result<Vec<Group>> {
-        let text = self
-            .client
-            .get(&format!("{}/profile/groups", API_URL))
-            .send()
-            .await?
-            .text()
-            .await?;
-        let result = serde_json::from_str::<Vec<Group>>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("OutOfCheeseError: Redo from start.");
-        Ok(result?)
-    }
-}
+use crate::UserAccountID;
 
 /// User profile information
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct UserProfile {
+    /// "hypothes.is"
     pub authority: String,
     pub features: HashMap<String, bool>,
     pub preferences: HashMap<String, bool>,
