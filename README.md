@@ -20,6 +20,7 @@ Set the environment variables `$HYPOTHESIS_NAME` and `$HYPOTHESIS_KEY` to your u
 cargo install hypothesis
 ```
 Run `hypothesis --help` to see subcommands and options.
+NOTE: the CLI doesn't currently have all the capabilities of the Rust crate, specifically bulk actions and updating dates are not supported.
 
 Generate shell completions:
 ```bash
