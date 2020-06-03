@@ -285,30 +285,27 @@ impl Hypothesis {
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// let annotation = api.create_annotation(&InputAnnotationBuilder::default()
+    /// let mut annotation = api.create_annotation(&InputAnnotationBuilder::default()
     ///                   .text("string")
     ///                   .uri("http://example.com")
     ///                   .tags(vec!["tag1".to_string(), "tag2".to_string()])
     ///                   .group(&group_id)
     ///                   .build()?).await?;
-    /// let updated_annotation = api.update_annotation(&annotation.id,
-    ///                             &InputAnnotationBuilder::default()
-    ///                                 .text("New String")
-    ///                                 .build()?).await?;
-    ///  assert_eq!(updated_annotation.id, annotation_id);
-    ///  assert_eq!(&updated_annotation.text, "New String");
+    /// annotation.text = String::from("New String");
+    /// let updated_annotation = api.update_annotation(&annotation).await?;
+    /// assert_eq!(updated_annotation.id, annotation.id);
+    /// assert_eq!(&updated_annotation.text, "New String");
     /// #    api.delete_annotation(&updated_annotation.id).await?;
     /// #    Ok(())
     /// # }
     /// ```
     pub async fn update_annotation(
         &self,
-        id: &str,
-        annotation: &InputAnnotation,
+        annotation: &Annotation,
     ) -> color_eyre::Result<Annotation> {
         let text = self
             .client
-            .patch(&format!("{}/annotations/{}", API_URL, id))
+            .patch(&format!("{}/annotations/{}", API_URL, annotation.id))
             .json(&annotation)
             .send()
             .await?
@@ -323,13 +320,11 @@ impl Hypothesis {
     /// Update many annotations at once
     pub async fn update_annotations(
         &self,
-        ids: &[String],
-        annotations: &[InputAnnotation],
+        annotations: &[Annotation],
     ) -> color_eyre::Result<Vec<Annotation>> {
-        let futures: Vec<_> = ids
+        let futures: Vec<_> = annotations
             .iter()
-            .zip(annotations.iter())
-            .map(|(id, a)| self.update_annotation(id, a))
+            .map(|a| self.update_annotation(&a))
             .collect();
         Ok(async { try_join_all(futures).await }.await?)
     }
@@ -350,7 +345,7 @@ impl Hypothesis {
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// /// Search for your own annotations:
-    /// let search_query = SearchQueryBuilder::default().user(&api.user).build()?;
+    /// let search_query = SearchQueryBuilder::default().user(&api.user.0).build()?;
     /// let search_results = api.search_annotations(&search_query).await?;
     /// #     assert!(!search_results.is_empty());
     /// #     Ok(())
@@ -415,7 +410,7 @@ impl Hypothesis {
             .await?;
         let result = serde_json::from_str::<Annotation>(&text)
             .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the given String exists");
+            .suggestion("Make sure the given Annotation ID exists");
         Ok(result?)
     }
 
@@ -870,7 +865,7 @@ impl Hypothesis {
 /// let user_id = "my_username".parse::<UserAccountID>().unwrap();
 /// ```
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
-pub struct UserAccountID(String);
+pub struct UserAccountID(pub String);
 
 impl FromStr for UserAccountID {
     type Err = ParseError;
@@ -882,7 +877,7 @@ impl FromStr for UserAccountID {
 impl fmt::Display for UserAccountID {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "UserID: {}", self.0)
+        write!(f, "{}", self.0)
     }
 }
 

@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 #[cfg(feature = "cli")]
 use structopt::StructOpt;
 
@@ -13,14 +13,13 @@ use crate::{is_default, UserAccountID};
 #[cfg_attr(
     feature = "cli",
     structopt(
-        about = "Create or update an annotation",
-        long_about = "Create / update and upload an annotation to your Hypothesis"
+        about = "Create an annotation",
+        long_about = "Create and upload an annotation to your Hypothesis"
     )
 )]
-/// Struct to create and update annotations
+/// Struct to create annotations
 ///
-/// For creating a new annotation, all fields except uri are optional, i.e. leave as default.
-/// For updating an existing annotation, all fields are optional.
+/// All fields except uri are optional, i.e. leave as default.
 ///
 /// # Example
 /// ```
@@ -53,6 +52,7 @@ pub struct InputAnnotation {
     /// Can be a URL (a web page address) or a URN representing another kind of resource such as
     /// DOI (Digital Object Identifier) or a PDF fingerprint.
     #[serde(skip_serializing_if = "is_default")]
+    #[cfg_attr(feature = "cli", structopt(default_value))]
     #[builder(setter(into))]
     pub uri: String,
     /// Annotation text / comment given by user
@@ -97,6 +97,26 @@ impl InputAnnotationBuilder {
     /// Builds a new `InputAnnotation`.
     pub fn build(&self) -> color_eyre::Result<InputAnnotation> {
         self.builder().map_err(|e| eyre!(e))
+    }
+}
+
+impl Annotation {
+    pub fn update(&mut self, annotation: InputAnnotation) {
+        if !annotation.uri.is_empty() {
+            self.uri = annotation.uri;
+        }
+        if !annotation.text.is_empty() {
+            self.text = annotation.text;
+        }
+        if let Some(tags) = annotation.tags {
+            self.tags = tags;
+        }
+        if !annotation.group.is_empty() {
+            self.group = annotation.group;
+        }
+        if annotation.references.is_empty() {
+            self.references = annotation.references;
+        }
     }
 }
 
@@ -361,10 +381,10 @@ pub struct SearchQuery {
     #[builder(setter(into))]
     pub wildcard_uri: String,
     /// Limit the results to annotations made by the specified user. (in the format `acct:<username>@<authority>`)
-    #[serde(skip_serializing_if = "is_default", serialize_with = "serialize_user")]
+    #[serde(skip_serializing_if = "is_default")]
     #[cfg_attr(feature = "cli", structopt(default_value, long))]
     #[builder(setter(into))]
-    pub user: UserAccountID,
+    pub user: String,
     /// Limit the results to annotations made in the specified group (by group ID).
     #[serde(skip_serializing_if = "is_default")]
     #[cfg_attr(feature = "cli", structopt(default_value, long))]
@@ -407,13 +427,6 @@ impl SearchQueryBuilder {
     pub fn build(&self) -> color_eyre::Result<SearchQuery> {
         self.builder().map_err(|e| eyre!(e))
     }
-}
-
-fn serialize_user<S>(x: &UserAccountID, s: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    s.serialize_str(&x.0)
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
