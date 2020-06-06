@@ -8,7 +8,6 @@ use structopt::clap::AppSettings;
 use structopt::clap::Shell;
 use structopt::StructOpt;
 
-#[cfg(feature = "cli")]
 use crate::annotations::InputAnnotation;
 use crate::annotations::{Order, SearchQuery, Sort};
 use crate::errors::CLIError;
@@ -20,7 +19,7 @@ use crate::Hypothesis;
 name = "hypothesis",
 about = "Call the Hypothesis API from the comfort of your terminal",
 rename_all = "kebab-case",
-global_settings = & [AppSettings::DeriveDisplayOrder]
+global_settings = & [AppSettings::DeriveDisplayOrder, AppSettings::ColoredHelp]
 )]
 pub enum HypothesisCLI {
     /// Manage annotations
@@ -201,7 +200,7 @@ impl HypothesisCLI {
             Self::Annotations { cmd } => match cmd {
                 AnnotationsCommand::Create { annotation, file } => {
                     let annotation = client.create_annotation(&annotation).await?;
-                    println!("Annotation {} created", annotation.id);
+                    println!("Created annotation {}", annotation.id);
                     if let Some(file) = file {
                         let writer: Box<dyn io::Write> = Box::new(fs::File::open(file)?);
                         let mut buffered = io::BufWriter::new(writer);
@@ -213,8 +212,10 @@ impl HypothesisCLI {
                     annotation,
                     file,
                 } => {
-                    let annotation = client.update_annotation(&id, &annotation).await?;
-                    println!("Annotation {} updated", annotation.id);
+                    let mut old_annotation = client.fetch_annotation(&id).await?;
+                    old_annotation.update(annotation);
+                    let annotation = client.update_annotation(&old_annotation).await?;
+                    println!("Updated annotation {}", annotation.id);
                     if let Some(file) = file {
                         let writer: Box<dyn io::Write> = Box::new(fs::File::open(file)?);
                         let mut buffered = io::BufWriter::new(writer);
@@ -244,22 +245,22 @@ impl HypothesisCLI {
                 AnnotationsCommand::Delete { id } => {
                     let deleted = client.delete_annotation(&id).await?;
                     if deleted {
-                        println!("Annotation {} deleted", id);
+                        println!("Deleted annotation {}", id);
                     } else {
                         println!("Couldn't delete annotation {}", id);
                     }
                 }
                 AnnotationsCommand::Flag { id } => {
                     client.flag_annotation(&id).await?;
-                    println!("Annotation {} flagged", id);
+                    println!("Flagged annotation {}", id);
                 }
                 AnnotationsCommand::Hide { id } => {
                     client.hide_annotation(&id).await?;
-                    println!("Annotation {} hidden", id);
+                    println!("Hid annotation {}", id);
                 }
                 AnnotationsCommand::Show { id } => {
                     client.show_annotation(&id).await?;
-                    println!("Annotation {} unhidden", id);
+                    println!("Unhid annotation {}", id);
                 }
             },
             Self::Groups { cmd } => match cmd {
@@ -280,7 +281,7 @@ impl HypothesisCLI {
                     file,
                 } => {
                     let group = client.create_group(&name, description.as_deref()).await?;
-                    println!("Created Group {}", group.id);
+                    println!("Created group {}", group.id);
                     if let Some(file) = file {
                         let writer: Box<dyn io::Write> = Box::new(fs::File::open(file)?);
                         let mut buffered = io::BufWriter::new(writer);
@@ -325,7 +326,7 @@ impl HypothesisCLI {
                 }
                 GroupsCommand::Leave { id } => {
                     client.leave_group(&id).await?;
-                    println!("You've left Group {}", id);
+                    println!("Left group {}", id);
                 }
             },
             Self::Profile { cmd } => match cmd {

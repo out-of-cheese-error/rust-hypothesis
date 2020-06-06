@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.0 - 2020-06-03
+### Changed
+* Update takes Annotation as input instead of InputAnnotation
+* SearchQuery takes String as input, i.e. input needs to already be formatted as acct:{username}@hypothes.is
+### Added
+* Happy path tests for `annotations` CLI 
+
 ## 0.4.0 - 2020-06-02
 ### Changed
 * Switched `AnnotationID` and `GroupID` back to Strings and &str 
