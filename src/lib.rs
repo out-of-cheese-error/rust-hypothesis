@@ -708,17 +708,17 @@ impl Hypothesis {
         name: Option<&str>,
         description: Option<&str>,
     ) -> color_eyre::Result<Group> {
-        let mut params = vec![];
+        let mut params = HashMap::new();
         if let Some(name) = name {
-            params.push(("name", name));
+            params.insert("name", name);
         }
         if let Some(description) = description {
-            params.push(("description", description));
+            params.insert("description", description);
         }
         let text = self
             .client
             .patch(&format!("{}/groups/{}", API_URL, id))
-            .form(&params)
+            .json(&params)
             .send()
             .await?
             .text()

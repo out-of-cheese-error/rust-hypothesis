@@ -8,7 +8,6 @@ use structopt::clap::AppSettings;
 use structopt::clap::Shell;
 use structopt::StructOpt;
 
-#[cfg(feature = "cli")]
 use crate::annotations::InputAnnotation;
 use crate::annotations::{Order, SearchQuery, Sort};
 use crate::errors::CLIError;
@@ -20,7 +19,7 @@ use crate::Hypothesis;
 name = "hypothesis",
 about = "Call the Hypothesis API from the comfort of your terminal",
 rename_all = "kebab-case",
-global_settings = & [AppSettings::DeriveDisplayOrder]
+global_settings = & [AppSettings::DeriveDisplayOrder, AppSettings::ColoredHelp]
 )]
 pub enum HypothesisCLI {
     /// Manage annotations
