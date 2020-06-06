@@ -21,8 +21,8 @@ cli = [
 
 [dependencies]
 reqwest = {version="0.10.4", features=["json", "blocking"]}
-eyre = "0.4.2"
-color-eyre = {version = "0.3.2"}
+eyre = "0.4.3"
+color-eyre = {version = "0.3.4"}
 thiserror = "1.0.19"
 chrono = {version = "0.4.11", features = ["serde"]}
 serde = {version = "1.0.110", features = ["derive"]}
