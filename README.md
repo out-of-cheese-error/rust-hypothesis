@@ -67,6 +67,9 @@ Check the [documentation](https://docs.rs/crate/hypothesis) for more usage examp
 ### Changelog
 See the [CHANGELOG](CHANGELOG.md)
 
+### Contributing
+Make sure you have a .env file (added to .gitignore) in the repo root with USERNAME, DEVELOPER_KEY, and TEST_GROUP_ID
+
 ### Caveats / Todo:
 - Only supports APIKey authorization and hypothes.is authority (i.e. single users).
 - `Target.selector.RangeSelector` doesn't seem to follow [W3C standards](https://www.w3.org/TR/annotation-model/#range-selector). It's just a hashmap for now.
