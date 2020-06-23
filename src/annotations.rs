@@ -201,7 +201,6 @@ pub struct Annotation {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct UserInfo {
     /// The annotation creator's display name
-    #[serde(default)]
     pub display_name: Option<String>,
 }
 
