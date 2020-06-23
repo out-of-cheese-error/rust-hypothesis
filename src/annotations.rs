@@ -202,7 +202,7 @@ pub struct Annotation {
 pub struct UserInfo {
     /// The annotation creator's display name
     #[serde(default)]
-    pub display_name: String,
+    pub display_name: Option<String>,
 }
 
 /// > While the API accepts arbitrary Annotation selectors in the target.selector property,
