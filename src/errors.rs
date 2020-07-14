@@ -1,8 +1,31 @@
 //! API and CLI specific errors
 use std::fmt;
 
+use reqwest::header::InvalidHeaderValue;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum HypothesisError {
+    #[error("Make sure input fields are valid")]
+    APIError(#[from] APIError),
+    #[error("Invalid header value")]
+    HeaderError(#[from] InvalidHeaderValue),
+    #[error("Reqwest error")]
+    ReqwestError(#[from] reqwest::Error),
+    #[error("{suggestion:?}")]
+    EnvironmentError {
+        #[source]
+        source: std::env::VarError,
+        suggestion: String,
+    },
+    #[error("JSON format error")]
+    SerdeError(#[from] serde_json::Error),
+    #[error("Couldn't parse URL")]
+    URLError(#[from] url::ParseError),
+    #[error("Builder error: {0}")]
+    BuilderError(String),
+}
 
 /// Errors returned from the Hypothesis API
 #[derive(Error, Serialize, Deserialize, Debug, Default, Clone)]

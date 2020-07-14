@@ -14,25 +14,32 @@ categories = ["api-bindings", "command-line-utilities"]
 default = ["cli"]
 
 # Feature required for hypothesis the CLI application.
-# Disable if using as a Rust crate.
+# Disable (set default-features=false) if using as a Rust crate.
 cli = [
     "structopt",
+    "eyre",
+    "color-eyre"
 ]
 
 [dependencies]
-reqwest = {version="0.10.4", features=["json", "blocking"]}
-eyre = "0.4.3"
-color-eyre = {version = "0.3.4"}
+# For CLI
+eyre = {version = "0.6.0", optional = true}
+color-eyre = {version = "0.5.0", optional = true}
+structopt = {version = "0.3.14", optional = true}
+
+# API calls
+reqwest = { version = "0.10.6", features = ["json", "rustls-tls"], default-features = false }
+tokio = { version = "0.2", features = ["macros"] }
+futures = "0.3.5"
+
 thiserror = "1.0.19"
 chrono = {version = "0.4.11", features = ["serde"]}
 serde = {version = "1.0.110", features = ["derive"]}
 serde_json = "1.0.53"
-dotenv = {version = "0.15.0"}
-structopt = {version = "0.3.14", optional = true}
-tokio = { version = "0.2", features = ["macros"] }
-futures = "0.3.5"
 derive_builder = "0.9.0"
+url = "2.1.1"
 
 [dev-dependencies]
 assert_cmd = "1.0.1"
 predicates = "1.0.4"
+dotenv = {version = "0.15.0"}

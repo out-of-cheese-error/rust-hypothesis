@@ -42,7 +42,7 @@ use hypothesis::Hypothesis;
 use hypothesis::annotations::{InputAnnotationBuilder, TargetBuilder, Selector};
 
 #[tokio::main]
-async fn main() -> color_eyre::Result<()> {
+async fn main() -> Result<(), hypothesis::errors::HypothesisError> {
     let api = Hypothesis::from_env()?;
     let new_annotation = InputAnnotationBuilder::default()
             .uri("https://www.example.com")

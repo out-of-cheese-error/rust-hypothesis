@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "cli")]
 use structopt::StructOpt;
 
-use crate::{is_default, UserAccountID};
+use crate::{errors, is_default, UserAccountID};
 
 #[cfg_attr(feature = "cli", derive(StructOpt))]
 #[cfg_attr(
@@ -25,7 +25,7 @@ use crate::{is_default, UserAccountID};
 /// ```
 /// use hypothesis::annotations::{InputAnnotationBuilder, TargetBuilder, Selector};
 /// # #[tokio::main]
-/// # async fn main() -> color_eyre::Result<()> {
+/// # async fn main() -> Result<(), hypothesis::errors::HypothesisError> {
 /// // A simple annotation
 /// let annotation_simple = InputAnnotationBuilder::default()
 ///     .uri("https://www.example.com")
@@ -95,8 +95,9 @@ pub struct InputAnnotation {
 
 impl InputAnnotationBuilder {
     /// Builds a new `InputAnnotation`.
-    pub fn build(&self) -> color_eyre::Result<InputAnnotation> {
-        self.builder().map_err(|e| eyre!(e))
+    pub fn build(&self) -> Result<InputAnnotation, errors::HypothesisError> {
+        self.builder()
+            .map_err(errors::HypothesisError::BuilderError)
     }
 }
 
@@ -137,8 +138,9 @@ pub struct Document {
 
 impl DocumentBuilder {
     /// Builds a new `Document`.
-    pub fn build(&self) -> color_eyre::Result<Document> {
-        self.builder().map_err(|e| eyre!(e))
+    pub fn build(&self) -> Result<Document, errors::HypothesisError> {
+        self.builder()
+            .map_err(errors::HypothesisError::BuilderError)
     }
 }
 
@@ -222,8 +224,9 @@ pub struct Target {
 
 impl TargetBuilder {
     /// Builds a new `Target`.
-    pub fn build(&self) -> color_eyre::Result<Target> {
-        self.builder().map_err(|e| eyre!(e))
+    pub fn build(&self) -> Result<Target, errors::HypothesisError> {
+        self.builder()
+            .map_err(|e| errors::HypothesisError::BuilderError(e))
     }
 }
 
@@ -423,8 +426,9 @@ pub struct SearchQuery {
 
 impl SearchQueryBuilder {
     /// Builds a new `SearchQuery`.
-    pub fn build(&self) -> color_eyre::Result<SearchQuery> {
-        self.builder().map_err(|e| eyre!(e))
+    pub fn build(&self) -> Result<SearchQuery, errors::HypothesisError> {
+        self.builder()
+            .map_err(errors::HypothesisError::BuilderError)
     }
 }
 

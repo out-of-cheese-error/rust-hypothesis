@@ -126,5 +126,6 @@ pub struct Member {
     /// string^acct:.+$
     pub userid: String,
     /// string <= 30 characters
-    pub display_name: String,
+    #[serde(default)]
+    pub display_name: Option<String>,
 }
