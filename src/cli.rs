@@ -202,7 +202,7 @@ impl HypothesisCLI {
                     let annotation = client.create_annotation(&annotation).await?;
                     println!("Created annotation {}", annotation.id);
                     if let Some(file) = file {
-                        let writer: Box<dyn io::Write> = Box::new(fs::File::open(file)?);
+                        let writer: Box<dyn io::Write> = Box::new(fs::File::create(file)?);
                         let mut buffered = io::BufWriter::new(writer);
                         writeln!(buffered, "{}", serde_json::to_string(&annotation)?)?;
                     }
@@ -217,7 +217,7 @@ impl HypothesisCLI {
                     let annotation = client.update_annotation(&old_annotation).await?;
                     println!("Updated annotation {}", annotation.id);
                     if let Some(file) = file {
-                        let writer: Box<dyn io::Write> = Box::new(fs::File::open(file)?);
+                        let writer: Box<dyn io::Write> = Box::new(fs::File::create(file)?);
                         let mut buffered = io::BufWriter::new(writer);
                         writeln!(buffered, "{}", serde_json::to_string(&annotation)?)?;
                     }
@@ -225,7 +225,7 @@ impl HypothesisCLI {
                 AnnotationsCommand::Search { query, file } => {
                     let annotations = client.search_annotations(&query).await?;
                     let writer: Box<dyn io::Write> = match file {
-                        Some(file) => Box::new(fs::File::open(file)?),
+                        Some(file) => Box::new(fs::File::create(file)?),
                         None => Box::new(io::stdout()),
                     };
                     let mut buffered = io::BufWriter::new(writer);
@@ -236,7 +236,7 @@ impl HypothesisCLI {
                 AnnotationsCommand::Fetch { id, file } => {
                     let annotation = client.fetch_annotation(&id).await?;
                     let writer: Box<dyn io::Write> = match file {
-                        Some(file) => Box::new(fs::File::open(file)?),
+                        Some(file) => Box::new(fs::File::create(file)?),
                         None => Box::new(io::stdout()),
                     };
                     let mut buffered = io::BufWriter::new(writer);
@@ -267,7 +267,7 @@ impl HypothesisCLI {
                 GroupsCommand::List { filters, file } => {
                     let groups = client.get_groups(&filters).await?;
                     let writer: Box<dyn io::Write> = match file {
-                        Some(file) => Box::new(fs::File::open(file)?),
+                        Some(file) => Box::new(fs::File::create(file)?),
                         None => Box::new(io::stdout()),
                     };
                     let mut buffered = io::BufWriter::new(writer);
@@ -283,7 +283,7 @@ impl HypothesisCLI {
                     let group = client.create_group(&name, description.as_deref()).await?;
                     println!("Created group {}", group.id);
                     if let Some(file) = file {
-                        let writer: Box<dyn io::Write> = Box::new(fs::File::open(file)?);
+                        let writer: Box<dyn io::Write> = Box::new(fs::File::create(file)?);
                         let mut buffered = io::BufWriter::new(writer);
                         writeln!(buffered, "{}", serde_json::to_string(&group)?)?;
                     }
@@ -291,7 +291,7 @@ impl HypothesisCLI {
                 GroupsCommand::Fetch { id, expand, file } => {
                     let group = client.fetch_group(&id, expand).await?;
                     let writer: Box<dyn io::Write> = match file {
-                        Some(file) => Box::new(fs::File::open(file)?),
+                        Some(file) => Box::new(fs::File::create(file)?),
                         None => Box::new(io::stdout()),
                     };
                     let mut buffered = io::BufWriter::new(writer);
@@ -308,7 +308,7 @@ impl HypothesisCLI {
                         .await?;
                     println!("Updated group {}", group.id);
                     if let Some(file) = file {
-                        let writer: Box<dyn io::Write> = Box::new(fs::File::open(file)?);
+                        let writer: Box<dyn io::Write> = Box::new(fs::File::create(file)?);
                         let mut buffered = io::BufWriter::new(writer);
                         writeln!(buffered, "{}", serde_json::to_string(&group)?)?;
                     }
@@ -316,7 +316,7 @@ impl HypothesisCLI {
                 GroupsCommand::Members { id, file } => {
                     let members = client.get_group_members(&id).await?;
                     let writer: Box<dyn io::Write> = match file {
-                        Some(file) => Box::new(fs::File::open(file)?),
+                        Some(file) => Box::new(fs::File::create(file)?),
                         None => Box::new(io::stdout()),
                     };
                     let mut buffered = io::BufWriter::new(writer);
@@ -333,7 +333,7 @@ impl HypothesisCLI {
                 ProfileCommand::User { file } => {
                     let profile = client.fetch_user_profile().await?;
                     let writer: Box<dyn io::Write> = match file {
-                        Some(file) => Box::new(fs::File::open(file)?),
+                        Some(file) => Box::new(fs::File::create(file)?),
                         None => Box::new(io::stdout()),
                     };
                     let mut buffered = io::BufWriter::new(writer);
@@ -342,7 +342,7 @@ impl HypothesisCLI {
                 ProfileCommand::Groups { file } => {
                     let groups = client.fetch_user_groups().await?;
                     let writer: Box<dyn io::Write> = match file {
-                        Some(file) => Box::new(fs::File::open(file)?),
+                        Some(file) => Box::new(fs::File::create(file)?),
                         None => Box::new(io::stdout()),
                     };
                     let mut buffered = io::BufWriter::new(writer);
