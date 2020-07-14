@@ -41,7 +41,7 @@
 //! use hypothesis::annotations::{InputAnnotationBuilder, TargetBuilder, Selector};
 //!
 //! #[tokio::main]
-//! async fn main() -> color_eyre::Result<()> {
+//! async fn main() -> Result<(), hypothesis::errors::HypothesisError> {
 //!     let api = Hypothesis::from_env()?;
 //!     let new_annotation = InputAnnotationBuilder::default()
 //!             .uri("https://www.example.com")
@@ -79,22 +79,18 @@
 //! - CLI just dumps output as JSON, this is fine right? Fancier CLIs can build on top of this (or use the crate directly)
 #[macro_use]
 extern crate derive_builder;
-#[macro_use]
-extern crate eyre;
 
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::string::ParseError;
 use std::{env, fmt};
 
-use color_eyre::Help;
-use eyre::WrapErr;
 use futures::future::try_join_all;
 use reqwest::{header, Url};
 use serde::{Deserialize, Serialize};
 
 use crate::annotations::{Annotation, InputAnnotation, SearchQuery};
-use crate::errors::APIError;
+use crate::errors::HypothesisError;
 use crate::groups::{Expand, Group, GroupFilters, Member};
 use crate::profile::UserProfile;
 
@@ -128,7 +124,7 @@ impl Hypothesis {
     /// (see [here](https://h.readthedocs.io/en/latest/api/authorization/) on how to get one)
     /// # Example
     /// ```
-    /// # fn main() -> color_eyre::Result<()> {
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
@@ -137,16 +133,18 @@ impl Hypothesis {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn new(username: &str, developer_key: &str) -> color_eyre::Result<Self> {
-        let user = UserAccountID::from_str(username)?;
+    pub fn new(username: &str, developer_key: &str) -> Result<Self, HypothesisError> {
+        let user = UserAccountID::from_str(username).expect("This should never error");
         let mut headers = header::HeaderMap::new();
         headers.insert(
             header::AUTHORIZATION,
-            header::HeaderValue::from_str(&format!("Bearer {}", developer_key))?,
+            header::HeaderValue::from_str(&format!("Bearer {}", developer_key))
+                .map_err(HypothesisError::HeaderError)?,
         );
         let client = reqwest::Client::builder()
             .default_headers(headers)
-            .build()?;
+            .build()
+            .map_err(HypothesisError::ReqwestError)?;
         Ok(Self {
             username: username.into(),
             user,
@@ -160,7 +158,7 @@ impl Hypothesis {
     /// (see [here](https://h.readthedocs.io/en/latest/api/authorization/) on how to get one)
     /// # Example
     /// ```
-    /// # fn main() -> color_eyre::Result<()> {
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// #    use std::env;
     /// #    dotenv::dotenv()?;
     /// #    let username = dotenv::var("USERNAME")?;
@@ -172,11 +170,18 @@ impl Hypothesis {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn from_env() -> color_eyre::Result<Self> {
-        let username = env::var("HYPOTHESIS_NAME")
-            .suggestion("Set the environment variable HYPOTHESIS_NAME to your username")?;
-        let developer_key = env::var("HYPOTHESIS_KEY")
-            .suggestion("Set the environment variable HYPOTHESIS_KEY to your personal API key")?;
+    pub fn from_env() -> Result<Self, HypothesisError> {
+        let username =
+            env::var("HYPOTHESIS_NAME").map_err(|e| HypothesisError::EnvironmentError {
+                source: e,
+                suggestion: "Set the environment variable HYPOTHESIS_NAME to your username".into(),
+            })?;
+        let developer_key =
+            env::var("HYPOTHESIS_KEY").map_err(|e| HypothesisError::EnvironmentError {
+                source: e,
+                suggestion: "Set the environment variable HYPOTHESIS_KEY to your personal API key"
+                    .into(),
+            })?;
         Ok(Self::new(&username, &developer_key)?)
     }
 
@@ -189,7 +194,7 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// use hypothesis::annotations::InputAnnotationBuilder;
     /// #     dotenv::dotenv()?;
@@ -211,18 +216,22 @@ impl Hypothesis {
     pub async fn create_annotation(
         &self,
         annotation: &InputAnnotation,
-    ) -> color_eyre::Result<Annotation> {
+    ) -> Result<Annotation, HypothesisError> {
         let text = self
             .client
             .post(&format!("{}/annotations", API_URL))
             .json(annotation)
             .send()
-            .await?
+            .await
+            .map_err(HypothesisError::ReqwestError)?
             .text()
-            .await?;
-        let result = serde_json::from_str::<Annotation>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure input fields are valid");
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
+        let result = serde_json::from_str::<Annotation>(&text).map_err(|_| {
+            HypothesisError::APIError(
+                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
+            )
+        });
         Ok(result?)
     }
 
@@ -236,7 +245,7 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # use hypothesis::Hypothesis;
     /// # use hypothesis::annotations::InputAnnotationBuilder;
     /// #     dotenv::dotenv()?;
@@ -266,7 +275,7 @@ impl Hypothesis {
     pub async fn create_annotations(
         &self,
         annotations: &[InputAnnotation],
-    ) -> color_eyre::Result<Vec<Annotation>> {
+    ) -> Result<Vec<Annotation>, HypothesisError> {
         let futures: Vec<_> = annotations
             .iter()
             .map(|a| self.create_annotation(a))
@@ -281,7 +290,7 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// use hypothesis::annotations::InputAnnotationBuilder;
     /// #     dotenv::dotenv()?;
@@ -306,18 +315,22 @@ impl Hypothesis {
     pub async fn update_annotation(
         &self,
         annotation: &Annotation,
-    ) -> color_eyre::Result<Annotation> {
+    ) -> Result<Annotation, HypothesisError> {
         let text = self
             .client
             .patch(&format!("{}/annotations/{}", API_URL, annotation.id))
             .json(&annotation)
             .send()
-            .await?
+            .await
+            .map_err(HypothesisError::ReqwestError)?
             .text()
-            .await?;
-        let result = serde_json::from_str::<Annotation>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure input fields are valid");
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
+        let result = serde_json::from_str::<Annotation>(&text).map_err(|_| {
+            HypothesisError::APIError(
+                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
+            )
+        });
         Ok(result?)
     }
 
@@ -325,7 +338,7 @@ impl Hypothesis {
     pub async fn update_annotations(
         &self,
         annotations: &[Annotation],
-    ) -> color_eyre::Result<Vec<Annotation>> {
+    ) -> Result<Vec<Annotation>, HypothesisError> {
         let futures: Vec<_> = annotations
             .iter()
             .map(|a| self.update_annotation(&a))
@@ -341,7 +354,7 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::{Hypothesis, UserAccountID};
     /// use hypothesis::annotations::SearchQueryBuilder;
     /// #     dotenv::dotenv()?;
@@ -358,25 +371,38 @@ impl Hypothesis {
     pub async fn search_annotations(
         &self,
         query: &SearchQuery,
-    ) -> color_eyre::Result<Vec<Annotation>> {
-        let query: HashMap<String, serde_json::Value> =
-            serde_json::from_str(&serde_json::to_string(&query)?)?;
+    ) -> Result<Vec<Annotation>, HypothesisError> {
+        let query: HashMap<String, serde_json::Value> = serde_json::from_str(
+            &serde_json::to_string(&query).map_err(HypothesisError::SerdeError)?,
+        )
+        .map_err(HypothesisError::SerdeError)?;
         let url = Url::parse_with_params(
             &format!("{}/search", API_URL),
             &query
                 .into_iter()
                 .map(|(k, v)| (k, v.to_string().replace('"', "")))
                 .collect::<Vec<_>>(),
-        )?;
-        let text = self.client.get(url).send().await?.text().await?;
+        )
+        .map_err(HypothesisError::URLError)?;
+        let text = self
+            .client
+            .get(url)
+            .send()
+            .await
+            .map_err(HypothesisError::ReqwestError)?
+            .text()
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
         #[derive(Deserialize, Debug, Clone, PartialEq)]
         struct SearchResult {
             rows: Vec<Annotation>,
             total: usize,
         }
-        let result = serde_json::from_str::<SearchResult>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the query is valid");
+        let result = serde_json::from_str::<SearchResult>(&text).map_err(|_| {
+            HypothesisError::APIError(
+                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
+            )
+        });
         Ok(result?.rows)
     }
 
@@ -385,7 +411,7 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// #    use hypothesis::annotations::InputAnnotationBuilder;
     /// #    dotenv::dotenv()?;
@@ -404,22 +430,29 @@ impl Hypothesis {
     /// #    Ok(())
     /// # }
     /// ```
-    pub async fn fetch_annotation(&self, id: &str) -> color_eyre::Result<Annotation> {
+    pub async fn fetch_annotation(&self, id: &str) -> Result<Annotation, HypothesisError> {
         let text = self
             .client
             .get(&format!("{}/annotations/{}", API_URL, id))
             .send()
-            .await?
+            .await
+            .map_err(HypothesisError::ReqwestError)?
             .text()
-            .await?;
-        let result = serde_json::from_str::<Annotation>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the given Annotation ID exists");
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
+        let result = serde_json::from_str::<Annotation>(&text).map_err(|_| {
+            HypothesisError::APIError(
+                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
+            )
+        });
         Ok(result?)
     }
 
     /// Fetch multiple annotations by ID
-    pub async fn fetch_annotations(&self, ids: &[String]) -> color_eyre::Result<Vec<Annotation>> {
+    pub async fn fetch_annotations(
+        &self,
+        ids: &[String],
+    ) -> Result<Vec<Annotation>, HypothesisError> {
         let futures: Vec<_> = ids.iter().map(|id| self.fetch_annotation(id)).collect();
         Ok(async { try_join_all(futures).await }.await?)
     }
@@ -429,7 +462,7 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// #    use hypothesis::annotations::InputAnnotationBuilder;
     /// #    dotenv::dotenv()?;
@@ -448,27 +481,31 @@ impl Hypothesis {
     /// #    Ok(())
     /// # }
     /// ```
-    pub async fn delete_annotation(&self, id: &str) -> color_eyre::Result<bool> {
+    pub async fn delete_annotation(&self, id: &str) -> Result<bool, HypothesisError> {
         let text = self
             .client
             .delete(&format!("{}/annotations/{}", API_URL, id))
             .send()
-            .await?
+            .await
+            .map_err(HypothesisError::ReqwestError)?
             .text()
-            .await?;
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
         #[derive(Deserialize, Debug, Clone, PartialEq)]
         struct DeletionResult {
             id: String,
             deleted: bool,
         }
-        let result = serde_json::from_str::<DeletionResult>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the given Annotation ID exists");
+        let result = serde_json::from_str::<DeletionResult>(&text).map_err(|_| {
+            HypothesisError::APIError(
+                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
+            )
+        });
         Ok(result?.deleted)
     }
 
     /// Delete multiple annotations by ID
-    pub async fn delete_annotations(&self, ids: &[String]) -> color_eyre::Result<Vec<bool>> {
+    pub async fn delete_annotations(&self, ids: &[String]) -> Result<Vec<bool>, HypothesisError> {
         let futures: Vec<_> = ids.iter().map(|id| self.delete_annotation(id)).collect();
         Ok(async { try_join_all(futures).await }.await?)
     }
@@ -478,17 +515,19 @@ impl Hypothesis {
     /// Flag an annotation for review (moderation). The moderator of the group containing the
     /// annotation will be notified of the flag and can decide whether or not to hide the
     /// annotation. Note that flags persist and cannot be removed once they are set.
-    pub async fn flag_annotation(&self, id: &str) -> color_eyre::Result<()> {
+    pub async fn flag_annotation(&self, id: &str) -> Result<(), HypothesisError> {
         let text = self
             .client
             .put(&format!("{}/annotations/{}/flag", API_URL, id))
             .send()
-            .await?
+            .await
+            .map_err(HypothesisError::ReqwestError)?
             .text()
-            .await?;
-        let error = serde_json::from_str::<APIError>(&text);
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
+        let error = serde_json::from_str::<errors::APIError>(&text);
         if let Ok(error) = error {
-            Err(error).suggestion("Make sure the given Annotation ID exists")
+            Err(HypothesisError::APIError(error))
         } else {
             Ok(())
         }
@@ -498,17 +537,19 @@ impl Hypothesis {
     ///
     /// Hide an annotation. The authenticated user needs to have the moderate permission for the
     /// group that contains the annotation — this permission is granted to the user who created the group.
-    pub async fn hide_annotation(&self, id: &str) -> color_eyre::Result<()> {
+    pub async fn hide_annotation(&self, id: &str) -> Result<(), HypothesisError> {
         let text = self
             .client
             .put(&format!("{}/annotations/{}/hide", API_URL, id))
             .send()
-            .await?
+            .await
+            .map_err(HypothesisError::ReqwestError)?
             .text()
-            .await?;
-        let error = serde_json::from_str::<APIError>(&text);
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
+        let error = serde_json::from_str::<errors::APIError>(&text);
         if let Ok(error) = error {
-            Err(error).suggestion("Make sure the given Annotation ID exists")
+            Err(HypothesisError::APIError(error))
         } else {
             Ok(())
         }
@@ -518,17 +559,19 @@ impl Hypothesis {
     ///
     /// Show/"un-hide" an annotation. The authenticated user needs to have the moderate permission
     /// for the group that contains the annotation—this permission is granted to the user who created the group.
-    pub async fn show_annotation(&self, id: &str) -> color_eyre::Result<()> {
+    pub async fn show_annotation(&self, id: &str) -> Result<(), HypothesisError> {
         let text = self
             .client
             .delete(&format!("{}/annotations/{}/hide", API_URL, id))
             .send()
-            .await?
+            .await
+            .map_err(HypothesisError::ReqwestError)?
             .text()
-            .await?;
-        let error = serde_json::from_str::<APIError>(&text);
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
+        let error = serde_json::from_str::<errors::APIError>(&text);
         if let Ok(error) = error {
-            Err(error).suggestion("Make sure the given Annotation ID exists")
+            Err(HypothesisError::APIError(error))
         } else {
             Ok(())
         }
@@ -540,7 +583,7 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// use hypothesis::groups::GroupFilters;
     /// #     dotenv::dotenv()?;
@@ -554,20 +597,33 @@ impl Hypothesis {
     /// #    Ok(())
     /// # }
     /// ```
-    pub async fn get_groups(&self, query: &GroupFilters) -> color_eyre::Result<Vec<Group>> {
-        let query: HashMap<String, serde_json::Value> =
-            serde_json::from_str(&serde_json::to_string(&query)?)?;
+    pub async fn get_groups(&self, query: &GroupFilters) -> Result<Vec<Group>, HypothesisError> {
+        let query: HashMap<String, serde_json::Value> = serde_json::from_str(
+            &serde_json::to_string(&query).map_err(HypothesisError::SerdeError)?,
+        )
+        .map_err(HypothesisError::SerdeError)?;
         let url = Url::parse_with_params(
             &format!("{}/groups", API_URL),
             &query
                 .into_iter()
                 .map(|(k, v)| (k, v.to_string().replace('"', "")))
                 .collect::<Vec<_>>(),
-        )?;
-        let text = self.client.get(url).send().await?.text().await?;
-        let result = serde_json::from_str::<Vec<Group>>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure input filters are valid");
+        )
+        .map_err(HypothesisError::URLError)?;
+        let text = self
+            .client
+            .get(url)
+            .send()
+            .await
+            .map_err(HypothesisError::ReqwestError)?
+            .text()
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
+        let result = serde_json::from_str::<Vec<Group>>(&text).map_err(|_| {
+            HypothesisError::APIError(
+                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
+            )
+        });
         Ok(result?)
     }
 
@@ -576,7 +632,7 @@ impl Hypothesis {
     /// # Example
     /// ```no_run
     /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
@@ -591,7 +647,7 @@ impl Hypothesis {
         &self,
         name: &str,
         description: Option<&str>,
-    ) -> color_eyre::Result<Group> {
+    ) -> Result<Group, HypothesisError> {
         let mut params = HashMap::new();
         params.insert("name", name);
         if let Some(description) = description {
@@ -602,12 +658,16 @@ impl Hypothesis {
             .post(&format!("{}/groups", API_URL))
             .json(&params)
             .send()
-            .await?
+            .await
+            .map_err(HypothesisError::ReqwestError)?
             .text()
-            .await?;
-        let result = serde_json::from_str::<Group>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("OutOfCheeseError: Redo from start.");
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
+        let result = serde_json::from_str::<Group>(&text).map_err(|_| {
+            HypothesisError::APIError(
+                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
+            )
+        });
         Ok(result?)
     }
 
@@ -616,7 +676,7 @@ impl Hypothesis {
         &self,
         names: &[String],
         descriptions: &[Option<String>],
-    ) -> color_eyre::Result<Vec<Group>> {
+    ) -> Result<Vec<Group>, HypothesisError> {
         let futures: Vec<_> = names
             .iter()
             .zip(descriptions.iter())
@@ -630,7 +690,7 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// use hypothesis::groups::Expand;
     /// #     dotenv::dotenv()?;
@@ -644,14 +704,19 @@ impl Hypothesis {
     /// #    Ok(())
     /// # }    
     /// ```
-    pub async fn fetch_group(&self, id: &str, expand: Vec<Expand>) -> color_eyre::Result<Group> {
+    pub async fn fetch_group(
+        &self,
+        id: &str,
+        expand: Vec<Expand>,
+    ) -> Result<Group, HypothesisError> {
         let params: HashMap<&str, Vec<String>> = if !expand.is_empty() {
             vec![(
                 "expand",
                 expand
                     .into_iter()
                     .map(|e| serde_json::to_string(&e))
-                    .collect::<Result<_, _>>()?,
+                    .collect::<Result<_, _>>()
+                    .map_err(HypothesisError::SerdeError)?,
             )]
             .into_iter()
             .collect()
@@ -663,12 +728,16 @@ impl Hypothesis {
             .get(&format!("{}/groups/{}", API_URL, id))
             .json(&params)
             .send()
-            .await?
+            .await
+            .map_err(HypothesisError::ReqwestError)?
             .text()
-            .await?;
-        let result = serde_json::from_str::<Group>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the given Group ID exists");
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
+        let result = serde_json::from_str::<Group>(&text).map_err(|_| {
+            HypothesisError::APIError(
+                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
+            )
+        });
         Ok(result?)
     }
 
@@ -677,7 +746,7 @@ impl Hypothesis {
         &self,
         ids: &[String],
         expands: Vec<Vec<Expand>>,
-    ) -> color_eyre::Result<Vec<Group>> {
+    ) -> Result<Vec<Group>, HypothesisError> {
         let futures: Vec<_> = ids
             .iter()
             .zip(expands.into_iter())
@@ -691,7 +760,7 @@ impl Hypothesis {
     /// # Example
     /// ```no_run
     /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
@@ -710,7 +779,7 @@ impl Hypothesis {
         id: &str,
         name: Option<&str>,
         description: Option<&str>,
-    ) -> color_eyre::Result<Group> {
+    ) -> Result<Group, HypothesisError> {
         let mut params = HashMap::new();
         if let Some(name) = name {
             params.insert("name", name);
@@ -723,12 +792,16 @@ impl Hypothesis {
             .patch(&format!("{}/groups/{}", API_URL, id))
             .json(&params)
             .send()
-            .await?
+            .await
+            .map_err(HypothesisError::ReqwestError)?
             .text()
-            .await?;
-        let result = serde_json::from_str::<Group>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the given Group ID exists");
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
+        let result = serde_json::from_str::<Group>(&text).map_err(|_| {
+            HypothesisError::APIError(
+                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
+            )
+        });
         Ok(result?)
     }
 
@@ -738,7 +811,7 @@ impl Hypothesis {
         ids: &[String],
         names: &[Option<String>],
         descriptions: &[Option<String>],
-    ) -> color_eyre::Result<Vec<Group>> {
+    ) -> Result<Vec<Group>, HypothesisError> {
         let futures: Vec<_> = ids
             .iter()
             .zip(names.iter())
@@ -757,7 +830,7 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
@@ -769,32 +842,38 @@ impl Hypothesis {
     /// #    Ok(())
     /// # }
     /// ```
-    pub async fn get_group_members(&self, id: &str) -> color_eyre::Result<Vec<Member>> {
+    pub async fn get_group_members(&self, id: &str) -> Result<Vec<Member>, HypothesisError> {
         let text = self
             .client
             .get(&format!("{}/groups/{}/members", API_URL, id))
             .send()
-            .await?
+            .await
+            .map_err(HypothesisError::ReqwestError)?
             .text()
-            .await?;
-        let result = serde_json::from_str::<Vec<Member>>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("Make sure the given Group ID exists");
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
+        let result = serde_json::from_str::<Vec<Member>>(&text).map_err(|_| {
+            HypothesisError::APIError(
+                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
+            )
+        });
         Ok(result?)
     }
 
     /// Remove yourself from a group.
-    pub async fn leave_group(&self, id: &str) -> color_eyre::Result<()> {
+    pub async fn leave_group(&self, id: &str) -> Result<(), HypothesisError> {
         let text = self
             .client
             .delete(&format!("{}/groups/{}/members/me", API_URL, id))
             .send()
-            .await?
+            .await
+            .map_err(HypothesisError::ReqwestError)?
             .text()
-            .await?;
-        let error = serde_json::from_str::<APIError>(&text);
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
+        let error = serde_json::from_str::<errors::APIError>(&text);
         if let Ok(error) = error {
-            Err(error).suggestion("Make sure the given Group ID exists")
+            Err(HypothesisError::APIError(error))
         } else {
             Ok(())
         }
@@ -805,7 +884,7 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
@@ -818,17 +897,21 @@ impl Hypothesis {
     /// # }
     /// ```
 
-    pub async fn fetch_user_profile(&self) -> color_eyre::Result<UserProfile> {
+    pub async fn fetch_user_profile(&self) -> Result<UserProfile, HypothesisError> {
         let text = self
             .client
             .get(&format!("{}/profile", API_URL))
             .send()
-            .await?
+            .await
+            .map_err(HypothesisError::ReqwestError)?
             .text()
-            .await?;
-        let result = serde_json::from_str::<UserProfile>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("OutOfCheeseError: Redo from start.");
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
+        let result = serde_json::from_str::<UserProfile>(&text).map_err(|_| {
+            HypothesisError::APIError(
+                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
+            )
+        });
         Ok(result?)
     }
 
@@ -836,7 +919,7 @@ impl Hypothesis {
     /// # Example
     /// ```
     /// # #[tokio::main]
-    /// # async fn main() -> color_eyre::Result<()> {
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
@@ -846,17 +929,21 @@ impl Hypothesis {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn fetch_user_groups(&self) -> color_eyre::Result<Vec<Group>> {
+    pub async fn fetch_user_groups(&self) -> Result<Vec<Group>, HypothesisError> {
         let text = self
             .client
             .get(&format!("{}/profile/groups", API_URL))
             .send()
-            .await?
+            .await
+            .map_err(HypothesisError::ReqwestError)?
             .text()
-            .await?;
-        let result = serde_json::from_str::<Vec<Group>>(&text)
-            .wrap_err(serde_json::from_str::<APIError>(&text).unwrap_or_default())
-            .suggestion("OutOfCheeseError: Redo from start.");
+            .await
+            .map_err(HypothesisError::ReqwestError)?;
+        let result = serde_json::from_str::<Vec<Group>>(&text).map_err(|_| {
+            HypothesisError::APIError(
+                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
+            )
+        });
         Ok(result?)
     }
 }
