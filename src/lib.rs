@@ -141,6 +141,11 @@ impl Hypothesis {
             header::HeaderValue::from_str(&format!("Bearer {}", developer_key))
                 .map_err(HypothesisError::HeaderError)?,
         );
+        headers.insert(
+            header::ACCEPT,
+            header::HeaderValue::from_str("application/vnd.hypothesis.v1+json")
+                .map_err(HypothesisError::HeaderError)?,
+        );
         let client = reqwest::Client::builder()
             .default_headers(headers)
             .build()
