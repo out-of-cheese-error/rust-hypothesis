@@ -35,7 +35,7 @@ use crate::{errors, is_default, UserAccountID};
 /// let annotation_complex = InputAnnotation::builder()
 ///     .uri("https://www.example.com")
 ///     .text("this is a comment")
-///     .target(TargetBuilder::default().source("https://www.example.com")
+///     .target(Target::builder().source("https://www.example.com")
 ///         .selector(vec![Selector::new_quote("exact text in website to highlight",
 ///                                             "prefix of text",
 ///                                             "suffix of text")]).build()?)
