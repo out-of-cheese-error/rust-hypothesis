@@ -38,15 +38,15 @@
 //! #### Examples
 //! ```rust no_run
 //! use hypothesis::Hypothesis;
-//! use hypothesis::annotations::{InputAnnotationBuilder, TargetBuilder, Selector};
+//! use hypothesis::annotations::{InputAnnotation, Target, Selector};
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), hypothesis::errors::HypothesisError> {
 //!     let api = Hypothesis::from_env()?;
-//!     let new_annotation = InputAnnotationBuilder::default()
+//!     let new_annotation = InputAnnotation::builder()
 //!             .uri("https://www.example.com")
 //!             .text("this is a comment")
-//!             .target(TargetBuilder::default()
+//!             .target(Target::builder()
 //!                .source("https://www.example.com")
 //!                .selector(vec![Selector::new_quote("exact text in website to highlight",
 //!                                                   "prefix of text",
@@ -194,21 +194,21 @@ impl Hypothesis {
     ///
     /// Posts a new annotation object to Hypothesis.
     /// Returns an [`Annotation`](annotations/struct.Annotation.html) as output.
-    /// See [`InputAnnotationBuilder`](annotations/struct.InputAnnotationBuilder.html) for examples on what you can add to an annotation.
+    /// See [`InputAnnotation`](annotations/struct.InputAnnotation.html) for examples on what you can add to an annotation.
     ///
     /// # Example
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
-    /// use hypothesis::annotations::InputAnnotationBuilder;
+    /// use hypothesis::annotations::InputAnnotation;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     ///
     /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// let annotation = api.create_annotation(&InputAnnotationBuilder::default()
+    /// let annotation = api.create_annotation(&InputAnnotation::builder()
     ///                     .text("string")
     ///                     .uri("http://example.com")
     ///                     .group(&group_id)
@@ -252,19 +252,19 @@ impl Hypothesis {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # use hypothesis::Hypothesis;
-    /// # use hypothesis::annotations::InputAnnotationBuilder;
+    /// # use hypothesis::annotations::InputAnnotation;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// let input_annotations = vec![
-    ///     InputAnnotationBuilder::default()
+    ///     InputAnnotation::builder()
     ///         .text("first")
     ///         .uri("http://example.com")
     ///         .group(&group_id)
     ///         .build()?,
-    ///     InputAnnotationBuilder::default()
+    ///     InputAnnotation::builder()
     ///         .text("second")
     ///         .uri("http://example.com")
     ///         .group(&group_id)   
@@ -297,13 +297,13 @@ impl Hypothesis {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
-    /// use hypothesis::annotations::InputAnnotationBuilder;
+    /// use hypothesis::annotations::InputAnnotation;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// let mut annotation = api.create_annotation(&InputAnnotationBuilder::default()
+    /// let mut annotation = api.create_annotation(&InputAnnotation::builder()
     ///                   .text("string")
     ///                   .uri("http://example.com")
     ///                   .tags(vec!["tag1".to_string(), "tag2".to_string()])
@@ -354,7 +354,7 @@ impl Hypothesis {
     /// Search for annotations with optional filters
     ///
     /// Returns a list of annotations matching the search query.
-    /// See  [`SearchQueryBuilder`](annotations/struct.SearchQueryBuilder.html) for more filtering options
+    /// See  [`SearchQuery`](annotations/struct.SearchQuery.html) for more filtering options
     ///
     /// This returns a max of 50 annotations at once, use `search_annotations_return_all` if you expect more
     /// # Example
@@ -362,13 +362,13 @@ impl Hypothesis {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::{Hypothesis, UserAccountID};
-    /// use hypothesis::annotations::SearchQueryBuilder;
+    /// use hypothesis::annotations::SearchQuery;
     /// #     dotenv::dotenv()?;
     /// #     let username = dotenv::var("USERNAME")?;
     /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// /// Search for your own annotations:
-    /// let search_query = SearchQueryBuilder::default().user(&api.user.0).build()?;
+    /// let search_query = SearchQuery::builder().user(&api.user.0).build()?;
     /// let search_results = api.search_annotations(&search_query).await?;
     /// #     assert!(!search_results.is_empty());
     /// #     Ok(())
@@ -413,7 +413,7 @@ impl Hypothesis {
     }
 
     /// Retrieve all annotations matching query
-    /// See  [`SearchQueryBuilder`](annotations/struct.SearchQueryBuilder.html) for filtering options
+    /// See  [`SearchQuery`](annotations/struct.SearchQuery.html) for filtering options
     pub async fn search_annotations_return_all(
         &self,
         query: &mut SearchQuery,
@@ -437,13 +437,13 @@ impl Hypothesis {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
-    /// #    use hypothesis::annotations::InputAnnotationBuilder;
+    /// #    use hypothesis::annotations::InputAnnotation;
     /// #    dotenv::dotenv()?;
     /// #    let username = dotenv::var("USERNAME")?;
     /// #    let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// #    let annotation = api.create_annotation(&InputAnnotationBuilder::default()
+    /// #    let annotation = api.create_annotation(&InputAnnotation::builder()
     /// #                       .text("string")
     /// #                       .uri("http://example.com")
     /// #                       .group(group_id).build()?).await?;
@@ -488,13 +488,13 @@ impl Hypothesis {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
-    /// #    use hypothesis::annotations::InputAnnotationBuilder;
+    /// #    use hypothesis::annotations::InputAnnotation;
     /// #    dotenv::dotenv()?;
     /// #    let username = dotenv::var("USERNAME")?;
     /// #    let developer_key = dotenv::var("DEVELOPER_KEY")?;
     /// #    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     /// let api = Hypothesis::new(&username, &developer_key)?;
-    /// #    let annotation = api.create_annotation(&InputAnnotationBuilder::default()
+    /// #    let annotation = api.create_annotation(&InputAnnotation::builder()
     /// #                       .text("string")
     /// #                       .uri("http://example.com")
     /// #                       .group(group_id).build()?).await?;

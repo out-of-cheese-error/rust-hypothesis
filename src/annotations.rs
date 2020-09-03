@@ -23,16 +23,16 @@ use crate::{errors, is_default, UserAccountID};
 ///
 /// # Example
 /// ```
-/// use hypothesis::annotations::{InputAnnotationBuilder, TargetBuilder, Selector};
+/// use hypothesis::annotations::{InputAnnotation, Target, Selector};
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), hypothesis::errors::HypothesisError> {
 /// // A simple annotation
-/// let annotation_simple = InputAnnotationBuilder::default()
+/// let annotation_simple = InputAnnotation::builder()
 ///     .uri("https://www.example.com")
 ///     .text("My new annotation").build()?;
 ///
 /// // A complex annotation
-/// let annotation_complex = InputAnnotationBuilder::default()
+/// let annotation_complex = InputAnnotation::builder()
 ///     .uri("https://www.example.com")
 ///     .text("this is a comment")
 ///     .target(TargetBuilder::default().source("https://www.example.com")
@@ -93,6 +93,12 @@ pub struct InputAnnotation {
     pub references: Vec<String>,
 }
 
+impl InputAnnotation {
+    pub fn builder() -> InputAnnotationBuilder {
+        InputAnnotationBuilder::default()
+    }
+}
+
 impl InputAnnotationBuilder {
     /// Builds a new `InputAnnotation`.
     pub fn build(&self) -> Result<InputAnnotation, errors::HypothesisError> {
@@ -134,6 +140,12 @@ pub struct Document {
     pub highwire: Option<HighWire>,
     #[serde(skip_serializing_if = "is_default")]
     pub link: Vec<Link>,
+}
+
+impl Document {
+    pub fn builder() -> DocumentBuilder {
+        DocumentBuilder::default()
+    }
 }
 
 impl DocumentBuilder {
@@ -220,6 +232,12 @@ pub struct Target {
     /// An array of selectors that refine this annotation's target
     #[serde(default, skip_serializing_if = "is_default")]
     pub selector: Vec<Selector>,
+}
+
+impl Target {
+    pub fn builder() -> TargetBuilder {
+        TargetBuilder::default()
+    }
 }
 
 impl TargetBuilder {
@@ -422,6 +440,12 @@ pub struct SearchQuery {
     #[cfg_attr(feature = "cli", structopt(default_value, long))]
     #[builder(setter(into))]
     pub text: String,
+}
+
+impl SearchQuery {
+    pub fn builder() -> SearchQueryBuilder {
+        SearchQueryBuilder::default()
+    }
 }
 
 impl SearchQueryBuilder {
