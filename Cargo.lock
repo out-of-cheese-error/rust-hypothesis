@@ -522,17 +522,17 @@ dependencies = [
 
 [[package]]
 name = "hypothesis"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
- "assert_cmd",
- "chrono",
- "color-eyre",
- "derive_builder",
- "dotenv",
- "eyre",
- "futures",
- "predicates",
- "reqwest",
+    "assert_cmd",
+    "chrono",
+    "color-eyre",
+    "derive_builder",
+    "dotenv",
+    "eyre",
+    "futures",
+    "predicates",
+    "reqwest",
  "serde",
  "serde_json",
  "structopt",
