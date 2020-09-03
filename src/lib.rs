@@ -356,6 +356,7 @@ impl Hypothesis {
     /// Returns a list of annotations matching the search query.
     /// See  [`SearchQueryBuilder`](annotations/struct.SearchQueryBuilder.html) for more filtering options
     ///
+    /// This returns a max of 50 annotations at once, use `search_annotations_return_all` if you expect more
     /// # Example
     /// ```
     /// # #[tokio::main]
@@ -409,6 +410,24 @@ impl Hypothesis {
             )
         });
         Ok(result?.rows)
+    }
+
+    /// Retrieve all annotations matching query
+    /// See  [`SearchQueryBuilder`](annotations/struct.SearchQueryBuilder.html) for filtering options
+    pub async fn search_annotations_return_all(
+        &self,
+        query: &mut SearchQuery,
+    ) -> Result<Vec<Annotation>, HypothesisError> {
+        let mut annotations = Vec::new();
+        loop {
+            let next = self.search_annotations(query).await?;
+            if next.is_empty() {
+                break;
+            }
+            query.search_after = next[next.len() - 1].updated.to_rfc3339();
+            annotations.extend_from_slice(&next);
+        }
+        Ok(annotations)
     }
 
     /// Fetch annotation by ID
