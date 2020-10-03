@@ -67,7 +67,7 @@
 //! See the [CHANGELOG](CHANGELOG.md)
 //!
 //! ### Contributing
-//! Make sure you have a .env file (added to .gitignore) in the repo root with USERNAME, DEVELOPER_KEY, and TEST_GROUP_ID
+//! Make sure you have a .env file (added to .gitignore) in the repo root with HYPOTHESIS_NAME, HYPOTHESIS_KEY, and TEST_GROUP_ID
 //!
 //! ### Caveats / Todo:
 //! - Only supports APIKey authorization and hypothes.is authority (i.e. single users).
@@ -127,8 +127,8 @@ impl Hypothesis {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #     let username = dotenv::var("HYPOTHESIS_NAME")?;
+    /// #     let developer_key = dotenv::var("HYPOTHESIS_KEY")?;
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// #     Ok(())
     /// # }
@@ -166,8 +166,8 @@ impl Hypothesis {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// #    use std::env;
     /// #    dotenv::dotenv()?;
-    /// #    let username = dotenv::var("USERNAME")?;
-    /// #    let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #    let username = dotenv::var("HYPOTHESIS_NAME")?;
+    /// #    let developer_key = dotenv::var("HYPOTHESIS_KEY")?;
     /// #    env::set_var("HYPOTHESIS_NAME", username);
     /// #    env::set_var("HYPOTHESIS_KEY", developer_key);
     /// use hypothesis::Hypothesis;
@@ -203,8 +203,8 @@ impl Hypothesis {
     /// use hypothesis::Hypothesis;
     /// use hypothesis::annotations::InputAnnotation;
     /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #     let username = dotenv::var("HYPOTHESIS_NAME")?;
+    /// #     let developer_key = dotenv::var("HYPOTHESIS_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     ///
     /// let api = Hypothesis::new(&username, &developer_key)?;
@@ -254,8 +254,8 @@ impl Hypothesis {
     /// # use hypothesis::Hypothesis;
     /// # use hypothesis::annotations::InputAnnotation;
     /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #     let username = dotenv::var("HYPOTHESIS_NAME")?;
+    /// #     let developer_key = dotenv::var("HYPOTHESIS_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// let input_annotations = vec![
@@ -299,8 +299,8 @@ impl Hypothesis {
     /// use hypothesis::Hypothesis;
     /// use hypothesis::annotations::InputAnnotation;
     /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #     let username = dotenv::var("HYPOTHESIS_NAME")?;
+    /// #     let developer_key = dotenv::var("HYPOTHESIS_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// let mut annotation = api.create_annotation(&InputAnnotation::builder()
@@ -364,8 +364,8 @@ impl Hypothesis {
     /// use hypothesis::{Hypothesis, UserAccountID};
     /// use hypothesis::annotations::SearchQuery;
     /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #     let username = dotenv::var("HYPOTHESIS_NAME")?;
+    /// #     let developer_key = dotenv::var("HYPOTHESIS_KEY")?;
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// /// Search for your own annotations:
     /// let search_query = SearchQuery::builder().user(&api.user.0).build()?;
@@ -439,8 +439,8 @@ impl Hypothesis {
     /// use hypothesis::Hypothesis;
     /// #    use hypothesis::annotations::InputAnnotation;
     /// #    dotenv::dotenv()?;
-    /// #    let username = dotenv::var("USERNAME")?;
-    /// #    let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #    let username = dotenv::var("HYPOTHESIS_NAME")?;
+    /// #    let developer_key = dotenv::var("HYPOTHESIS_KEY")?;
     /// #    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// #    let annotation = api.create_annotation(&InputAnnotation::builder()
@@ -490,8 +490,8 @@ impl Hypothesis {
     /// use hypothesis::Hypothesis;
     /// #    use hypothesis::annotations::InputAnnotation;
     /// #    dotenv::dotenv()?;
-    /// #    let username = dotenv::var("USERNAME")?;
-    /// #    let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #    let username = dotenv::var("HYPOTHESIS_NAME")?;
+    /// #    let developer_key = dotenv::var("HYPOTHESIS_KEY")?;
     /// #    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// #    let annotation = api.create_annotation(&InputAnnotation::builder()
@@ -611,8 +611,8 @@ impl Hypothesis {
     /// use hypothesis::Hypothesis;
     /// use hypothesis::groups::GroupFilters;
     /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #     let username = dotenv::var("HYPOTHESIS_NAME")?;
+    /// #     let developer_key = dotenv::var("HYPOTHESIS_KEY")?;
     ///
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// /// Get all Groups belonging to user
@@ -659,8 +659,8 @@ impl Hypothesis {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #     let username = dotenv::var("HYPOTHESIS_NAME")?;
+    /// #     let developer_key = dotenv::var("HYPOTHESIS_KEY")?;
     ///
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// let group = api.create_group("my_group", Some("a test group")).await?;
@@ -718,8 +718,8 @@ impl Hypothesis {
     /// use hypothesis::Hypothesis;
     /// use hypothesis::groups::Expand;
     /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #     let username = dotenv::var("HYPOTHESIS_NAME")?;
+    /// #     let developer_key = dotenv::var("HYPOTHESIS_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID")?;
     ///
     /// let api = Hypothesis::new(&username, &developer_key)?;
@@ -787,8 +787,8 @@ impl Hypothesis {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #     let username = dotenv::var("HYPOTHESIS_NAME")?;
+    /// #     let developer_key = dotenv::var("HYPOTHESIS_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID")?;
     ///
     /// let api = Hypothesis::new(&username, &developer_key)?;
@@ -857,8 +857,8 @@ impl Hypothesis {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #     let username = dotenv::var("HYPOTHESIS_NAME")?;
+    /// #     let developer_key = dotenv::var("HYPOTHESIS_KEY")?;
     /// #     let group_id = dotenv::var("TEST_GROUP_ID")?;
     ///
     /// let api = Hypothesis::new(&username, &developer_key)?;
@@ -911,8 +911,8 @@ impl Hypothesis {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #     let username = dotenv::var("HYPOTHESIS_NAME")?;
+    /// #     let developer_key = dotenv::var("HYPOTHESIS_KEY")?;
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// let profile = api.fetch_user_profile().await?;
     /// assert!(profile.userid.is_some());
@@ -946,8 +946,8 @@ impl Hypothesis {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use hypothesis::Hypothesis;
     /// #     dotenv::dotenv()?;
-    /// #     let username = dotenv::var("USERNAME")?;
-    /// #     let developer_key = dotenv::var("DEVELOPER_KEY")?;
+    /// #     let username = dotenv::var("HYPOTHESIS_NAME")?;
+    /// #     let developer_key = dotenv::var("HYPOTHESIS_KEY")?;
     /// let api = Hypothesis::new(&username, &developer_key)?;
     /// let groups = api.fetch_user_groups().await?;
     /// #     Ok(())

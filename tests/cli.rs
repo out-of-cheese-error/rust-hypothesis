@@ -31,8 +31,8 @@ fn create_annotation(
 fn add_and_delete_annotation() -> color_eyre::Result<()> {
     dotenv::dotenv()?;
     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
-    let username = dotenv::var("USERNAME")?;
-    let key = dotenv::var("DEVELOPER_KEY")?;
+    let username = dotenv::var("HYPOTHESIS_NAME")?;
+    let key = dotenv::var("HYPOTHESIS_KEY")?;
 
     // Create a new annotation
     let id = create_annotation("test annotation comment", &username, &key, &group_id);
@@ -67,8 +67,8 @@ fn add_and_delete_annotation() -> color_eyre::Result<()> {
 fn update_annotation() -> color_eyre::Result<()> {
     dotenv::dotenv()?;
     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
-    let username = dotenv::var("USERNAME")?;
-    let key = dotenv::var("DEVELOPER_KEY")?;
+    let username = dotenv::var("HYPOTHESIS_NAME")?;
+    let key = dotenv::var("HYPOTHESIS_KEY")?;
 
     // Create a new annotation
     let id = create_annotation("test annotation comment", &username, &key, &group_id);
@@ -112,8 +112,8 @@ fn update_annotation() -> color_eyre::Result<()> {
 fn search_annotations() -> color_eyre::Result<()> {
     dotenv::dotenv()?;
     let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
-    let username = dotenv::var("USERNAME")?;
-    let key = dotenv::var("DEVELOPER_KEY")?;
+    let username = dotenv::var("HYPOTHESIS_NAME")?;
+    let key = dotenv::var("HYPOTHESIS_KEY")?;
     let ids = (0..4)
         .map(|i| create_annotation(&format!("test text {}", i), &username, &key, &group_id))
         .collect::<Result<Vec<_>, _>>()?;
@@ -171,8 +171,8 @@ fn create_group(
 #[test]
 fn create_and_leave_group() -> color_eyre::Result<()> {
     dotenv::dotenv()?;
-    let username = dotenv::var("USERNAME")?;
-    let key = dotenv::var("DEVELOPER_KEY")?;
+    let username = dotenv::var("HYPOTHESIS_NAME")?;
+    let key = dotenv::var("HYPOTHESIS_KEY")?;
 
     // Create a new group
     let group_id = create_group("test_name", "test description with spaces", &username, &key);
@@ -206,8 +206,8 @@ fn create_and_leave_group() -> color_eyre::Result<()> {
 
 #[test]
 fn update_group() -> color_eyre::Result<()> {
-    let username = dotenv::var("USERNAME")?;
-    let key = dotenv::var("DEVELOPER_KEY")?;
+    let username = dotenv::var("HYPOTHESIS_NAME")?;
+    let key = dotenv::var("HYPOTHESIS_KEY")?;
 
     // Create a new group
     let group_id = create_group("test_name", "test description with spaces", &username, &key);
