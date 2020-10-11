@@ -244,7 +244,7 @@ impl TargetBuilder {
     /// Builds a new `Target`.
     pub fn build(&self) -> Result<Target, errors::HypothesisError> {
         self.builder()
-            .map_err(errors::HypothesisError::BuilderError)
+            .map_err(|e| errors::HypothesisError::BuilderError(e))
     }
 }
 
