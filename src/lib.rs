@@ -980,25 +980,31 @@ impl Hypothesis {
 /// let user_id = "my_username".parse::<UserAccountID>().unwrap();
 /// ```
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
-pub struct UserAccountID(pub String);
+pub struct UserAccountID(pub String, pub String);
+
+impl<'a> UserAccountID {
+    pub fn username(&'a self) -> &'a str {
+        &self.1
+    }
+}
 
 impl FromStr for UserAccountID {
     type Err = ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(format!("acct:{}@hypothes.is", s)))
+        Ok(Self(format!("acct:{}@hypothes.is", s), s.to_owned()))
     }
 }
 
 impl fmt::Display for UserAccountID {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.1)
     }
 }
 
 impl Into<UserAccountID> for &UserAccountID {
     #[inline]
     fn into(self) -> UserAccountID {
-        UserAccountID(self.0.to_owned())
+        UserAccountID(self.0.to_owned(), self.1.to_owned())
     }
 }
