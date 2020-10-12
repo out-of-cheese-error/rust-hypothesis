@@ -396,7 +396,7 @@ pub struct SearchQuery {
     #[builder(setter(into))]
     pub uri_parts: String,
     /// Limit the results to annotations whose URIs match the wildcard pattern.
-    #[serde(skip_serializing_if = "is_default")]
+    #[serde(rename = "wildcard_uri", skip_serializing_if = "is_default")]
     #[cfg_attr(feature = "cli", structopt(default_value, long))]
     #[builder(setter(into))]
     pub wildcard_uri: String,
