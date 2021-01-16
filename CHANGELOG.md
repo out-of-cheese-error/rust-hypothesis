@@ -1,16 +1,24 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
+to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## 0.8.0 - 2021-01-16
+
+Updated dependencies
 
 ## 0.7.2 - 2020-11-28
+
 Fixed typo: wildcard-uri -> wildcard_uri
 
 ## 0.7.1 - 2020-09-03
+
 Added `builder` methods to generate Builders (https://matklad.github.io/2020/08/12/who-builds-the-builder.html)
 
 ## 0.7.0 - 2020-09-03
+
 Added `search_annotations_return_all` which uses a loop to bypass the limit for number of annotations returned
 
 ## 0.6.0 - 2020-06-23

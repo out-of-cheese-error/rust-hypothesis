@@ -996,9 +996,9 @@ impl fmt::Display for UserAccountID {
     }
 }
 
-impl Into<UserAccountID> for &UserAccountID {
+impl From<&UserAccountID> for UserAccountID {
     #[inline]
-    fn into(self) -> UserAccountID {
-        UserAccountID(self.0.to_owned())
+    fn from(a: &UserAccountID) -> UserAccountID {
+        UserAccountID(a.0.to_owned())
     }
 }
