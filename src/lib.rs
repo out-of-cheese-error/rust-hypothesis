@@ -1,8 +1,8 @@
 //! [![Crates.io](https://img.shields.io/crates/v/hypothesis.svg)](https://crates.io/crates/hypothesis)
 //! [![Docs.rs](https://docs.rs/hypothesis/badge.svg)](https://docs.rs/hypothesis)
-//! [![CI](https://github.com/out-of-cheese-error/hypothesis/workflows/Continuous%20Integration/badge.svg)](https://github.com/out-of-cheese-error/hypothesis/actions)
-//! [![GitHub release](https://img.shields.io/github/release/out-of-cheese-error/hypothesis.svg)](https://GitHub.com/out-of-cheese-error/hypothesis/releases/)
-//! [![dependency status](https://deps.rs/repo/github/out-of-cheese-error/hypothesis/status.svg)](https://deps.rs/repo/github/out-of-cheese-error/hypothesis)
+//! [![CI](https://github.com/out-of-cheese-error/rust-hypothesis/workflows/Continuous%20Integration/badge.svg)](https://github.com/out-of-cheese-error/rust-hypothesis/actions)
+//! [![GitHub release](https://img.shields.io/github/release/out-of-cheese-error/rust-hypothesis.svg)](https://GitHub.com/out-of-cheese-error/rust-hypothesis/releases/)
+//! [![dependency status](https://deps.rs/repo/github/out-of-cheese-error/rust-hypothesis/status.svg)](https://deps.rs/repo/github/out-of-cheese-error/rust-hypothesis)
 //!
 //! # A Rust API for [Hypothesis](https://web.hypothes.is/)
 //!
