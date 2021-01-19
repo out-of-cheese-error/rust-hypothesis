@@ -1,11 +1,18 @@
 <!-- cargo-sync-readme start -->
 
 [![Crates.io](https://img.shields.io/crates/v/hypothesis.svg)](https://crates.io/crates/hypothesis)
+[![Docs.rs](https://docs.rs/hypothesis/badge.svg)](https://docs.rs/hypothesis)
+[![CI](https://github.com/out-of-cheese-error/hypothesis/workflows/Continuous%20Integration/badge.svg)](https://github.com/out-of-cheese-error/hypothesis/actions)
+[![GitHub release](https://img.shields.io/github/release/out-of-cheese-error/hypothesis.svg)](https://GitHub.com/out-of-cheese-error/hypothesis/releases/)
+[![dependency status](https://deps.rs/repo/github/out-of-cheese-error/hypothesis/status.svg)](https://deps.rs/repo/github/out-of-cheese-error/hypothesis)
+
 # A Rust API for [Hypothesis](https://web.hypothes.is/)
 
 ## Description
-A lightweight wrapper and CLI for the [Hypothesis Web API v1.0.0](https://h.readthedocs.io/en/latest/api-reference/v1/).
-It includes all APIKey authorized endpoints related to
+
+A lightweight wrapper and CLI for the [Hypothesis Web API v1.0.0](https://h.readthedocs.io/en/latest/api-reference/v1/). It includes all APIKey
+authorized endpoints related to
+
 * annotations (create / update / delete / search / fetch / flag),
 * groups (create / update / list / fetch / leave / members)
 * profile (user information / groups)
@@ -39,15 +46,15 @@ tokio = { version = "0.2", features = ["macros"] }
 #### Examples
 ```rust no_run
 use hypothesis::Hypothesis;
-use hypothesis::annotations::{InputAnnotationBuilder, TargetBuilder, Selector};
+use hypothesis::annotations::{InputAnnotation, Target, Selector};
 
 #[tokio::main]
 async fn main() -> Result<(), hypothesis::errors::HypothesisError> {
     let api = Hypothesis::from_env()?;
-    let new_annotation = InputAnnotationBuilder::default()
+    let new_annotation = InputAnnotation::builder()
             .uri("https://www.example.com")
             .text("this is a comment")
-            .target(TargetBuilder::default()
+            .target(Target::builder()
                .source("https://www.example.com")
                .selector(vec![Selector::new_quote("exact text in website to highlight",
                                                   "prefix of text",
