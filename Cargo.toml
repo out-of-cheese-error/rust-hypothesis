@@ -1,6 +1,6 @@
 [package]
 name = "hypothesis"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["Ninjani"]
 edition = "2018"
 description = "a Rust wrapper and CLI for the Hypothesis API"
