@@ -1,6 +1,6 @@
 [package]
 name = "hypothesis"
-version = "0.9.0"
+version = "0.9.1"
 authors = ["Ninjani"]
 edition = "2018"
 description = "a Rust wrapper and CLI for the Hypothesis API"
@@ -28,17 +28,17 @@ color-eyre = { version = "0.5.10", optional = true }
 structopt = { version = "0.3.21", optional = true }
 
 # API calls
-reqwest = { version = "0.11.0", features = ["json", "rustls-tls"], default-features = false }
-tokio = { version = "1.0.2", features = ["macros", "rt-multi-thread"] }
-futures = "0.3.12"
-thiserror = "1.0.23"
+reqwest = { version = "0.11.2", features = ["json", "rustls-tls"], default-features = false }
+tokio = { version = "1.4.0", features = ["macros", "rt-multi-thread"] }
+futures = "0.3.13"
+thiserror = "1.0.24"
 chrono = { version = "0.4.19", features = ["serde"] }
-serde = { version = "1.0.119", features = ["derive"] }
-serde_json = "1.0.61"
+serde = { version = "1.0.125", features = ["derive"] }
+serde_json = "1.0.64"
 derive_builder = "0.9.0"
-url = "2.2.0"
+url = "2.2.1"
 
 [dev-dependencies]
-assert_cmd = "1.0.2"
-predicates = "1.0.6"
+assert_cmd = "1.0.3"
+predicates = "1.0.7"
 dotenv = "0.15.0"
