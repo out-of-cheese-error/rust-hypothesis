@@ -127,18 +127,18 @@ impl Annotation {
     }
 }
 
-#[derive(Serialize, Debug, Default, Clone, PartialEq, Builder)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Builder)]
 #[builder(build_fn(name = "builder"))]
 pub struct Document {
-    #[serde(skip_serializing_if = "is_default")]
+    #[serde(skip_serializing_if = "is_default", default)]
     pub title: Vec<String>,
-    #[serde(skip_serializing_if = "is_default")]
+    #[serde(skip_serializing_if = "is_default", default)]
     #[builder(setter(strip_option), default)]
     pub dc: Option<Dc>,
-    #[serde(skip_serializing_if = "is_default")]
+    #[serde(skip_serializing_if = "is_default", default)]
     #[builder(setter(strip_option), default)]
     pub highwire: Option<HighWire>,
-    #[serde(skip_serializing_if = "is_default")]
+    #[serde(skip_serializing_if = "is_default", default)]
     pub link: Vec<Link>,
 }
 
@@ -156,24 +156,24 @@ impl DocumentBuilder {
     }
 }
 
-#[derive(Serialize, Default, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct HighWire {
-    #[serde(skip_serializing_if = "is_default")]
+    #[serde(skip_serializing_if = "is_default", default)]
     pub doi: Vec<String>,
-    #[serde(skip_serializing_if = "is_default")]
+    #[serde(skip_serializing_if = "is_default", default)]
     pub pdf_url: Vec<String>,
 }
 
-#[derive(Serialize, Debug, Default, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct Link {
     pub href: String,
-    #[serde(skip_serializing_if = "is_default", rename = "type")]
+    #[serde(skip_serializing_if = "is_default", rename = "type", default)]
     pub link_type: String,
 }
 
-#[derive(Serialize, Debug, Default, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct Dc {
-    #[serde(skip_serializing_if = "is_default")]
+    #[serde(skip_serializing_if = "is_default", default)]
     pub identifier: Vec<String>,
 }
 
@@ -205,6 +205,9 @@ pub struct Annotation {
     pub hidden: bool,
     /// Whether this annotation has one or more flags for moderation
     pub flagged: bool,
+    /// Document information
+    #[serde(default)]
+    pub document: Option<Document>,
     /// Annotation IDs for any annotations this annotation references (e.g. is a reply to)
     #[serde(default)]
     pub references: Vec<String>,
