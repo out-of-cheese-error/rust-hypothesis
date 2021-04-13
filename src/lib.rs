@@ -114,14 +114,15 @@ fn is_default<T: Default + PartialEq>(t: &T) -> bool {
     t == &T::default()
 }
 
-pub fn serde_parse<'a, T: Deserialize<'a>>(text: &'a str) -> color_eyre::Result<T, errors::HypothesisError> {
-        serde_json::from_str::<T>(&text).map_err(|_| {
-            errors::HypothesisError::APIError{
-                source: serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
-                raw_text: text.to_owned()
-            }
-        })
-    }
+pub fn serde_parse<'a, T: Deserialize<'a>>(
+    text: &'a str,
+) -> color_eyre::Result<T, errors::HypothesisError> {
+    serde_json::from_str::<T>(&text).map_err(|e| errors::HypothesisError::APIError {
+        source: serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
+        serde_error: Some(e),
+        raw_text: text.to_owned(),
+    })
+}
 
 /// Hypothesis API client
 pub struct Hypothesis {
@@ -540,7 +541,11 @@ impl Hypothesis {
             .map_err(HypothesisError::ReqwestError)?;
         let error = serde_json::from_str::<errors::APIError>(&text);
         if let Ok(error) = error {
-            Err(HypothesisError::APIError{source: error, raw_text: text})
+            Err(HypothesisError::APIError {
+                source: error,
+                raw_text: text,
+                serde_error: None,
+            })
         } else {
             Ok(())
         }
@@ -562,7 +567,11 @@ impl Hypothesis {
             .map_err(HypothesisError::ReqwestError)?;
         let error = serde_json::from_str::<errors::APIError>(&text);
         if let Ok(error) = error {
-            Err(HypothesisError::APIError{source: error, raw_text: text})
+            Err(HypothesisError::APIError {
+                source: error,
+                raw_text: text,
+                serde_error: None,
+            })
         } else {
             Ok(())
         }
@@ -584,7 +593,11 @@ impl Hypothesis {
             .map_err(HypothesisError::ReqwestError)?;
         let error = serde_json::from_str::<errors::APIError>(&text);
         if let Ok(error) = error {
-            Err(HypothesisError::APIError{source: error, raw_text: text})
+            Err(HypothesisError::APIError {
+                source: error,
+                raw_text: text,
+                serde_error: None,
+            })
         } else {
             Ok(())
         }
@@ -861,7 +874,11 @@ impl Hypothesis {
             .map_err(HypothesisError::ReqwestError)?;
         let error = serde_json::from_str::<errors::APIError>(&text);
         if let Ok(error) = error {
-            Err(HypothesisError::APIError{source: error, raw_text: text})
+            Err(HypothesisError::APIError {
+                source: error,
+                raw_text: text,
+                serde_error: None,
+            })
         } else {
             Ok(())
         }

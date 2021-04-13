@@ -11,7 +11,8 @@ pub enum HypothesisError {
     APIError {
         #[source]
         source: APIError,
-        raw_text: String
+        serde_error: Option<serde_json::Error>,
+        raw_text: String,
     },
     #[error("Invalid header value")]
     HeaderError(#[from] InvalidHeaderValue),
