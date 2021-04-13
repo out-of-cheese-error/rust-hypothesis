@@ -116,7 +116,7 @@ fn is_default<T: Default + PartialEq>(t: &T) -> bool {
 
 pub fn serde_parse<'a, T: Deserialize<'a>>(
     text: &'a str,
-) -> color_eyre::Result<T, errors::HypothesisError> {
+) -> Result<T, errors::HypothesisError> {
     serde_json::from_str::<T>(&text).map_err(|e| errors::HypothesisError::APIError {
         source: serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
         serde_error: Some(e),
