@@ -114,9 +114,7 @@ fn is_default<T: Default + PartialEq>(t: &T) -> bool {
     t == &T::default()
 }
 
-pub fn serde_parse<'a, T: Deserialize<'a>>(
-    text: &'a str,
-) -> Result<T, errors::HypothesisError> {
+pub fn serde_parse<'a, T: Deserialize<'a>>(text: &'a str) -> Result<T, errors::HypothesisError> {
     serde_json::from_str::<T>(&text).map_err(|e| errors::HypothesisError::APIError {
         source: serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
         serde_error: Some(e),
