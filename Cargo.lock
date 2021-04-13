@@ -540,7 +540,7 @@ dependencies = [
 
 [[package]]
 name = "hypothesis"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "assert_cmd",
  "chrono",
