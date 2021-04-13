@@ -114,6 +114,15 @@ fn is_default<T: Default + PartialEq>(t: &T) -> bool {
     t == &T::default()
 }
 
+pub fn serde_parse<'a, T: Deserialize<'a>>(text: &'a str) -> color_eyre::Result<T, errors::HypothesisError> {
+        serde_json::from_str::<T>(&text).map_err(|_| {
+            errors::HypothesisError::APIError{
+                source: serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
+                raw_text: text.to_owned()
+            }
+        })
+    }
+
 /// Hypothesis API client
 pub struct Hypothesis {
     /// Authenticated user
@@ -237,12 +246,7 @@ impl Hypothesis {
             .text()
             .await
             .map_err(HypothesisError::ReqwestError)?;
-        let result = serde_json::from_str::<Annotation>(&text).map_err(|_| {
-            HypothesisError::APIError(
-                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
-            )
-        });
-        Ok(result?)
+        Ok(serde_parse::<Annotation>(&text)?)
     }
 
     /// Create many new annotations
@@ -336,12 +340,7 @@ impl Hypothesis {
             .text()
             .await
             .map_err(HypothesisError::ReqwestError)?;
-        let result = serde_json::from_str::<Annotation>(&text).map_err(|_| {
-            HypothesisError::APIError(
-                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
-            )
-        });
-        Ok(result?)
+        Ok(serde_parse::<Annotation>(&text)?)
     }
 
     /// Update many annotations at once
@@ -409,12 +408,7 @@ impl Hypothesis {
             rows: Vec<Annotation>,
             total: usize,
         }
-        let result = serde_json::from_str::<SearchResult>(&text).map_err(|_| {
-            HypothesisError::APIError(
-                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
-            )
-        });
-        Ok(result?.rows)
+        Ok(serde_parse::<SearchResult>(&text)?.rows)
     }
 
     /// Retrieve all annotations matching query
@@ -469,12 +463,7 @@ impl Hypothesis {
             .text()
             .await
             .map_err(HypothesisError::ReqwestError)?;
-        let result = serde_json::from_str::<Annotation>(&text).map_err(|_| {
-            HypothesisError::APIError(
-                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
-            )
-        });
-        Ok(result?)
+        Ok(serde_parse::<Annotation>(&text)?)
     }
 
     /// Fetch multiple annotations by ID
@@ -525,12 +514,7 @@ impl Hypothesis {
             id: String,
             deleted: bool,
         }
-        let result = serde_json::from_str::<DeletionResult>(&text).map_err(|_| {
-            HypothesisError::APIError(
-                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
-            )
-        });
-        Ok(result?.deleted)
+        Ok(serde_parse::<DeletionResult>(&text)?.deleted)
     }
 
     /// Delete multiple annotations by ID
@@ -556,7 +540,7 @@ impl Hypothesis {
             .map_err(HypothesisError::ReqwestError)?;
         let error = serde_json::from_str::<errors::APIError>(&text);
         if let Ok(error) = error {
-            Err(HypothesisError::APIError(error))
+            Err(HypothesisError::APIError{source: error, raw_text: text})
         } else {
             Ok(())
         }
@@ -578,7 +562,7 @@ impl Hypothesis {
             .map_err(HypothesisError::ReqwestError)?;
         let error = serde_json::from_str::<errors::APIError>(&text);
         if let Ok(error) = error {
-            Err(HypothesisError::APIError(error))
+            Err(HypothesisError::APIError{source: error, raw_text: text})
         } else {
             Ok(())
         }
@@ -600,7 +584,7 @@ impl Hypothesis {
             .map_err(HypothesisError::ReqwestError)?;
         let error = serde_json::from_str::<errors::APIError>(&text);
         if let Ok(error) = error {
-            Err(HypothesisError::APIError(error))
+            Err(HypothesisError::APIError{source: error, raw_text: text})
         } else {
             Ok(())
         }
@@ -648,12 +632,7 @@ impl Hypothesis {
             .text()
             .await
             .map_err(HypothesisError::ReqwestError)?;
-        let result = serde_json::from_str::<Vec<Group>>(&text).map_err(|_| {
-            HypothesisError::APIError(
-                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
-            )
-        });
-        Ok(result?)
+        Ok(serde_parse::<Vec<Group>>(&text)?)
     }
 
     /// Create a new, private group for the currently-authenticated user.
@@ -692,12 +671,7 @@ impl Hypothesis {
             .text()
             .await
             .map_err(HypothesisError::ReqwestError)?;
-        let result = serde_json::from_str::<Group>(&text).map_err(|_| {
-            HypothesisError::APIError(
-                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
-            )
-        });
-        Ok(result?)
+        Ok(serde_parse::<Group>(&text)?)
     }
 
     /// Create multiple groups
@@ -762,12 +736,7 @@ impl Hypothesis {
             .text()
             .await
             .map_err(HypothesisError::ReqwestError)?;
-        let result = serde_json::from_str::<Group>(&text).map_err(|_| {
-            HypothesisError::APIError(
-                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
-            )
-        });
-        Ok(result?)
+        Ok(serde_parse::<Group>(&text)?)
     }
 
     /// Fetch multiple groups by ID
@@ -826,12 +795,7 @@ impl Hypothesis {
             .text()
             .await
             .map_err(HypothesisError::ReqwestError)?;
-        let result = serde_json::from_str::<Group>(&text).map_err(|_| {
-            HypothesisError::APIError(
-                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
-            )
-        });
-        Ok(result?)
+        Ok(serde_parse::<Group>(&text)?)
     }
 
     /// Update multiple groups
@@ -881,12 +845,7 @@ impl Hypothesis {
             .text()
             .await
             .map_err(HypothesisError::ReqwestError)?;
-        let result = serde_json::from_str::<Vec<Member>>(&text).map_err(|_| {
-            HypothesisError::APIError(
-                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
-            )
-        });
-        Ok(result?)
+        Ok(serde_parse::<Vec<Member>>(&text)?)
     }
 
     /// Remove yourself from a group.
@@ -902,7 +861,7 @@ impl Hypothesis {
             .map_err(HypothesisError::ReqwestError)?;
         let error = serde_json::from_str::<errors::APIError>(&text);
         if let Ok(error) = error {
-            Err(HypothesisError::APIError(error))
+            Err(HypothesisError::APIError{source: error, raw_text: text})
         } else {
             Ok(())
         }
@@ -936,12 +895,7 @@ impl Hypothesis {
             .text()
             .await
             .map_err(HypothesisError::ReqwestError)?;
-        let result = serde_json::from_str::<UserProfile>(&text).map_err(|_| {
-            HypothesisError::APIError(
-                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
-            )
-        });
-        Ok(result?)
+        Ok(serde_parse::<UserProfile>(&text)?)
     }
 
     /// Fetch the groups for which the currently-authenticated user is a member.
@@ -968,12 +922,7 @@ impl Hypothesis {
             .text()
             .await
             .map_err(HypothesisError::ReqwestError)?;
-        let result = serde_json::from_str::<Vec<Group>>(&text).map_err(|_| {
-            HypothesisError::APIError(
-                serde_json::from_str::<errors::APIError>(&text).unwrap_or_default(),
-            )
-        });
-        Ok(result?)
+        Ok(serde_parse::<Vec<Group>>(&text)?)
     }
 }
 

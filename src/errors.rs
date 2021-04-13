@@ -8,7 +8,11 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum HypothesisError {
     #[error("Make sure input fields are valid")]
-    APIError(#[from] APIError),
+    APIError {
+        #[source]
+        source: APIError,
+        raw_text: String
+    },
     #[error("Invalid header value")]
     HeaderError(#[from] InvalidHeaderValue),
     #[error("Reqwest error")]
