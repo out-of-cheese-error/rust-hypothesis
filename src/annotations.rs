@@ -268,9 +268,14 @@ pub enum Selector {
     /// > beginning of the ending selector, but not including it.
     /// [Web Annotation Data Model - Range Selector](https://www.w3.org/TR/annotation-model/#range-selector)
     /// NOTE - the Hypothesis API doesn't seem to follow this standard for RangeSelector so this just returns a HashMap for now
-    /// TODO: make RangeSelector a struct
-    RangeSelector(HashMap<String, serde_json::Value>),
     TextPositionSelector(TextPositionSelector),
+    /// TODO: make Selectors into structs
+    RangeSelector(HashMap<String, serde_json::Value>),
+    FragmentSelector(HashMap<String, serde_json::Value>),
+    CssSelector(HashMap<String, serde_json::Value>),
+    XPathSelector(HashMap<String, serde_json::Value>),
+    DataPositionSelector(HashMap<String, serde_json::Value>),
+    SvgSelector(HashMap<String, serde_json::Value>),
 }
 
 impl Selector {
