@@ -2,6 +2,7 @@
 
 use assert_cmd::Command;
 use predicates::prelude::*;
+use std::{thread, time};
 
 use hypothesis::annotations::Annotation;
 
@@ -30,7 +31,7 @@ fn create_annotation(
 #[test]
 fn add_and_delete_annotation() -> color_eyre::Result<()> {
     dotenv::dotenv()?;
-    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
+    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or_else(|_| "__world__".into());
     let username = dotenv::var("HYPOTHESIS_NAME")?;
     let key = dotenv::var("HYPOTHESIS_KEY")?;
 
@@ -66,7 +67,7 @@ fn add_and_delete_annotation() -> color_eyre::Result<()> {
 #[test]
 fn update_annotation() -> color_eyre::Result<()> {
     dotenv::dotenv()?;
-    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
+    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or_else(|_| "__world__".into());
     let username = dotenv::var("HYPOTHESIS_NAME")?;
     let key = dotenv::var("HYPOTHESIS_KEY")?;
 
@@ -111,12 +112,15 @@ fn update_annotation() -> color_eyre::Result<()> {
 #[test]
 fn search_annotations() -> color_eyre::Result<()> {
     dotenv::dotenv()?;
-    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or("__world__".into());
+    let group_id = dotenv::var("TEST_GROUP_ID").unwrap_or_else(|_| "__world__".into());
     let username = dotenv::var("HYPOTHESIS_NAME")?;
     let key = dotenv::var("HYPOTHESIS_KEY")?;
     let ids = (0..4)
         .map(|i| create_annotation(&format!("test text {}", i), &username, &key, &group_id))
         .collect::<Result<Vec<_>, _>>()?;
+
+    let duration = time::Duration::from_millis(500);
+    thread::sleep(duration);
     let mut cmd = Command::cargo_bin("hypothesis")?;
     let output = cmd
         .env("HYPOTHESIS_NAME", &username)

@@ -1,8 +1,8 @@
 [package]
 name = "hypothesis"
-version = "0.10.2"
+version = "0.10.3"
 authors = ["Ninjani"]
-edition = "2018"
+edition = "2021"
 description = "a Rust wrapper and CLI for the Hypothesis API"
 repository = "https://github.com/out-of-cheese-error/rust-hypothesis"
 readme = "README.md"
@@ -23,22 +23,22 @@ cli = [
 
 [dependencies]
 # For CLI
-eyre = { version = "0.6.5", optional = true }
-color-eyre = { version = "0.5.10", optional = true }
-structopt = { version = "0.3.21", optional = true }
+eyre = { version = "0.6.8", optional = true }
+color-eyre = { version = "0.6.1", optional = true }
+structopt = { version = "0.3.26", optional = true }
 
 # API calls
-reqwest = { version = "0.11.2", features = ["json", "rustls-tls"], default-features = false }
-tokio = { version = "1.4.0", features = ["macros", "rt-multi-thread"] }
-futures = "0.3.13"
-thiserror = "1.0.24"
+reqwest = { version = "0.11.10", features = ["json", "rustls-tls"], default-features = false }
+tokio = { version = "1.18.0", features = ["macros", "rt-multi-thread"] }
+futures = "0.3.21"
+thiserror = "1.0.30"
 chrono = { version = "0.4.19", features = ["serde"] }
-serde = { version = "1.0.125", features = ["derive"] }
-serde_json = "1.0.64"
-derive_builder = "0.9.0"
-url = "2.2.1"
+serde = { version = "1.0.136", features = ["derive"] }
+serde_json = "1.0.79"
+derive_builder = "0.11.2"
+url = "2.2.2"
 
 [dev-dependencies]
-assert_cmd = "1.0.3"
-predicates = "1.0.7"
+assert_cmd = "2.0.4"
+predicates = "2.1.1"
 dotenv = "0.15.0"
