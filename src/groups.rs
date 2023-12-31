@@ -2,6 +2,7 @@
 
 #[cfg(feature = "cli")]
 use clap::Parser;
+#[cfg(feature = "cli")]
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 
