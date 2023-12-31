@@ -387,9 +387,19 @@ impl Hypothesis {
         .map_err(HypothesisError::SerdeError)?;
         let url = Url::parse_with_params(
             &format!("{}/search", API_URL),
-            &query
+            query
                 .into_iter()
-                .map(|(k, v)| (k, v.to_string().replace('"', "")))
+                .flat_map(|(k, v)| {
+                    if v.is_array() {
+                        v.as_array()
+                            .unwrap()
+                            .iter()
+                            .map(|v| (k.clone(), v.to_string().replace('"', "")))
+                            .collect::<Vec<_>>()
+                    } else {
+                        vec![(k, v.to_string().replace('"', ""))]
+                    }
+                })
                 .collect::<Vec<_>>(),
         )
         .map_err(HypothesisError::URLError)?;
@@ -628,7 +638,7 @@ impl Hypothesis {
         .map_err(HypothesisError::SerdeError)?;
         let url = Url::parse_with_params(
             &format!("{}/groups", API_URL),
-            &query
+            query
                 .into_iter()
                 .map(|(k, v)| (k, v.to_string().replace('"', "")))
                 .collect::<Vec<_>>(),

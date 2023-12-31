@@ -14,8 +14,8 @@ fn create_annotation(
 ) -> color_eyre::Result<String> {
     let mut cmd = Command::cargo_bin("hypothesis")?;
     let output = cmd
-        .env("HYPOTHESIS_NAME", &username)
-        .env("HYPOTHESIS_KEY", &key)
+        .env("HYPOTHESIS_NAME", username)
+        .env("HYPOTHESIS_KEY", key)
         .arg("annotations")
         .arg("create")
         .arg(&format!("--text={}", text))
@@ -159,8 +159,8 @@ fn create_group(
 ) -> color_eyre::Result<String> {
     let mut cmd = Command::cargo_bin("hypothesis")?;
     let output = cmd
-        .env("HYPOTHESIS_NAME", &username)
-        .env("HYPOTHESIS_KEY", &key)
+        .env("HYPOTHESIS_NAME", username)
+        .env("HYPOTHESIS_KEY", key)
         .arg("groups")
         .arg("create")
         .arg(name)

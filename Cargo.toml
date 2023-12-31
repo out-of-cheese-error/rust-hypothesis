@@ -1,6 +1,6 @@
 [package]
 name = "hypothesis"
-version = "0.10.4"
+version = "0.11.1"
 authors = ["Ninjani"]
 edition = "2021"
 description = "a Rust wrapper and CLI for the Hypothesis API"
@@ -16,29 +16,31 @@ default = ["cli"]
 # Feature required for hypothesis the CLI application.
 # Disable (set default-features=false) if using as a Rust crate.
 cli = [
-    "structopt",
+    "clap",
+    "clap_complete",
     "eyre",
     "color-eyre"
 ]
 
 [dependencies]
 # For CLI
-eyre = { version = "0.6.8", optional = true }
+eyre = { version = "0.6.11", optional = true }
 color-eyre = { version = "0.6.2", optional = true }
-structopt = { version = "0.3.26", optional = true }
+clap = { version = "4.4.12", features = ["derive", "env"], optional = true }
+clap_complete = { version = "4.4.5", optional = true }
 
 # API calls
-reqwest = { version = "0.11.11", features = ["json", "rustls-tls"], default-features = false }
-tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
-futures = "0.3.23"
-thiserror = "1.0.32"
-chrono = { version = "0.4.22", features = ["serde"] }
-serde = { version = "1.0.144", features = ["derive"] }
-serde_json = "1.0.85"
-derive_builder = "0.11.2"
-url = "2.2.2"
+reqwest = { version = "0.11.23", features = ["json", "rustls-tls"], default-features = false }
+tokio = { version = "1.35.1", features = ["macros", "rt-multi-thread"] }
+futures = "0.3.30"
+thiserror = "1.0.53"
+chrono = { version = "0.4.31", features = ["serde"] }
+serde = { version = "1.0.193", features = ["derive"] }
+serde_json = "1.0.108"
+derive_builder = "0.12.0"
+url = "2.5.0"
 
 [dev-dependencies]
-assert_cmd = "2.0.4"
-predicates = "2.1.1"
+assert_cmd = "2.0.12"
+predicates = "3.0.4"
 dotenv = "0.15.0"

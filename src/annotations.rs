@@ -3,16 +3,18 @@
 use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 #[cfg(feature = "cli")]
-use structopt::StructOpt;
+use clap::Parser;
+#[cfg(feature = "cli")]
+use clap::ValueEnum;
+use serde::{Deserialize, Serialize};
 
 use crate::{errors, is_default, UserAccountID};
 
-#[cfg_attr(feature = "cli", derive(StructOpt))]
+#[cfg_attr(feature = "cli", derive(Parser))]
 #[cfg_attr(
     feature = "cli",
-    structopt(
+    clap(
         about = "Create an annotation",
         long_about = "Create and upload an annotation to your Hypothesis"
     )
@@ -52,24 +54,24 @@ pub struct InputAnnotation {
     /// Can be a URL (a web page address) or a URN representing another kind of resource such as
     /// DOI (Digital Object Identifier) or a PDF fingerprint.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(default_value))]
+    #[cfg_attr(feature = "cli", clap(default_value = ""))]
     #[builder(setter(into))]
     pub uri: String,
     /// Annotation text / comment given by user
     ///
     /// This is NOT the selected text on the web-page
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "", long))]
     #[builder(setter(into))]
     pub text: String,
     /// Tags attached to the annotation
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(long))]
+    #[cfg_attr(feature = "cli", clap(long))]
     #[builder(setter(strip_option), default)]
     pub tags: Option<Vec<String>>,
     /// Further metadata about the target document
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(skip))]
+    #[cfg_attr(feature = "cli", clap(skip))]
     #[builder(setter(strip_option), default)]
     pub document: Option<Document>,
     #[serde(skip_serializing_if = "is_default")]
@@ -78,18 +80,18 @@ pub struct InputAnnotation {
     /// If an annotation is a reply to another
     /// annotation (see `references`), this field will be ignored —
     /// replies belong to the same group as their parent annotations.
-    #[cfg_attr(feature = "cli", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "", long))]
     #[builder(setter(into))]
     pub group: String,
     /// Which part of the document does the annotation target?
     ///
     /// If left as default then the annotation is linked to the whole page.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(skip))]
+    #[cfg_attr(feature = "cli", clap(skip))]
     pub target: Target,
     /// Annotation IDs for any annotations this annotation references (e.g. is a reply to)
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(long))]
+    #[cfg_attr(feature = "cli", clap(long))]
     pub references: Vec<String>,
 }
 
@@ -176,6 +178,7 @@ pub struct Dc {
     #[serde(skip_serializing_if = "is_default", default)]
     pub identifier: Vec<String>,
 }
+
 
 /// Full representation of an Annotation resource and applicable relationships.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -322,6 +325,7 @@ pub struct TextPositionSelector {
     pub end: u64,
 }
 
+#[cfg_attr(feature = "cli", derive(ValueEnum))]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Sort {
@@ -338,6 +342,7 @@ impl Default for Sort {
     }
 }
 
+#[cfg_attr(feature = "cli", derive(ValueEnum))]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Order {
@@ -352,7 +357,7 @@ impl Default for Order {
 }
 
 /// Options to filter and sort search results. See [the Hypothesis API docs](https://h.readthedocs.io/en/latest/api-reference/v1/#tag/annotations/paths/~1search/get) for more details on using these fields
-#[cfg_attr(feature = "cli", derive(StructOpt))]
+#[cfg_attr(feature = "cli", derive(Parser))]
 #[derive(Serialize, Debug, Clone, PartialEq, Builder, Default)]
 #[builder(build_fn(name = "builder"), default)]
 pub struct SearchQuery {
@@ -360,92 +365,93 @@ pub struct SearchQuery {
     ///
     /// Default: 20. Range: [ 0 .. 200 ]
     #[builder(default = "20")]
-    #[cfg_attr(feature = "cli", structopt(default_value = "20", long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "20", long))]
     pub limit: u8,
     /// The field by which annotations should be sorted
     /// One of created, updated, id, group, user
     ///
     /// Default: updated
-    #[cfg_attr(feature = "cli", structopt(default_value = "updated", long, possible_values = & Sort::variants()))]
+    #[cfg_attr(feature = "cli", clap(default_value = "updated", long, value_parser = clap::builder::EnumValueParser::<Sort>::new()))]
     pub sort: Sort,
     /// Example: "2019-01-03T19:46:09.334Z"
     ///
     /// Define a start point for a subset (page) of annotation search results.
     /// NOTE: make sure to set sort to `Sort::Asc` if using `search_after`
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "", long))]
     #[builder(setter(into))]
     pub search_after: String,
     /// The number of initial annotations to skip in the result set.
     ///
     /// Default: 0. Range: <= 9800.
     /// search_after is more efficient.
-    #[cfg_attr(feature = "cli", structopt(default_value = "0", long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "0", long))]
     pub offset: usize,
     /// The order in which the results should be sorted.
     /// One of asc, desc
     ///
     /// Default: desc
-    #[cfg_attr(feature = "cli", structopt(default_value = "desc", long, possible_values = & Order::variants()))]
+    #[cfg_attr(feature = "cli", clap(default_value = "desc", long, value_parser = clap::builder::EnumValueParser::<Order>::new()))]
     pub order: Order,
     /// Limit the results to annotations matching the specific URI or equivalent URIs.
     ///
     /// URI can be a URL (a web page address) or a URN representing another kind of resource such
     /// as DOI (Digital Object Identifier) or a PDF fingerprint.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "", long))]
     #[builder(setter(into))]
     pub uri: String,
     /// Limit the results to annotations containing the given keyword (tokenized chunk) in the URI.
     /// The value must exactly match an individual URI keyword.
     ///
     #[serde(rename = "uri.parts", skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "", long))]
     #[builder(setter(into))]
     pub uri_parts: String,
     /// Limit the results to annotations whose URIs match the wildcard pattern.
     #[serde(rename = "wildcard_uri", skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "", long))]
     #[builder(setter(into))]
     pub wildcard_uri: String,
     /// Limit the results to annotations made by the specified user. (in the format `acct:<username>@<authority>`)
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "", long))]
     #[builder(setter(into))]
     pub user: String,
     /// Limit the results to annotations made in the specified group (by group ID).
+    /// This can be specified multiple times to retrieve multiple groups.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "", long))]
     #[builder(setter(into))]
-    pub group: String,
+    pub group: Vec<String>,
     /// Limit the results to annotations tagged with the specified value.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "", long))]
     #[builder(setter(into))]
     pub tag: String,
     /// Similar to tag but allows a list of multiple tags.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(long))]
+    #[cfg_attr(feature = "cli", clap(long))]
     pub tags: Vec<String>,
     /// Limit the results to annotations who contain the indicated keyword in any of the following fields:
     /// `quote`, `tags`, `text`, `url`
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "", long))]
     #[builder(setter(into))]
     pub any: String,
     /// Limit the results to annotations that contain this text inside the text that was annotated.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "", long))]
     #[builder(setter(into))]
     pub quote: String,
     /// Returns annotations that are replies to this parent annotation ID.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "", long))]
     #[builder(setter(into))]
     pub references: String,
     /// Limit the results to annotations that contain this text in their textual body.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "", long))]
     #[builder(setter(into))]
     pub text: String,
 }

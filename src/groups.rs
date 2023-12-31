@@ -1,12 +1,14 @@
 //! Objects related to the "groups" endpoint
 
-use serde::{Deserialize, Serialize};
 #[cfg(feature = "cli")]
-use structopt::StructOpt;
+use clap::Parser;
+use clap::ValueEnum;
+use serde::{Deserialize, Serialize};
 
 use crate::is_default;
 
 /// Which field to expand
+#[cfg_attr(feature = "cli", derive(ValueEnum))]
 #[derive(Serialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Expand {
@@ -17,7 +19,7 @@ pub enum Expand {
 }
 
 /// Filter groups by authority and target document
-#[cfg_attr(feature = "cli", derive(StructOpt))]
+#[cfg_attr(feature = "cli", derive(Parser))]
 #[derive(Serialize, Debug, Default, Clone, PartialEq)]
 pub struct GroupFilters {
     /// Filter returned groups to this authority.
@@ -25,16 +27,16 @@ pub struct GroupFilters {
     ///
     /// Default: "hypothes.is"
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(default_value = "hypothes.is", long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "hypothes.is", long))]
     pub authority: String,
     /// Only retrieve public (i.e. non-private) groups that apply to a given document URI (i.e. the target document being annotated).
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(default_value, long))]
+    #[cfg_attr(feature = "cli", clap(default_value = "", long))]
     pub document_uri: String,
     /// One or more relations to expand for a group resource.
     /// Possible values: organization, scopes
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", structopt(long, possible_values = & Expand::variants()))]
+    #[cfg_attr(feature = "cli", clap(long, value_parser = clap::builder::EnumValueParser::<Expand>::new()))]
     pub expand: Vec<Expand>,
 }
 

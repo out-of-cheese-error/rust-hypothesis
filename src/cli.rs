@@ -1,59 +1,56 @@
 //! Objects related to the command-line tool
-use std::io::Write;
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::{fs, io};
-
-use structopt::clap::AppSettings;
-use structopt::clap::Shell;
-use structopt::StructOpt;
-
 use crate::annotations::InputAnnotation;
 use crate::annotations::{Order, SearchQuery, Sort};
 use crate::errors::CLIError;
 use crate::groups::{Expand, GroupFilters};
 use crate::Hypothesis;
 
-#[derive(Debug, StructOpt)]
-#[structopt(
-name = "hypothesis",
-about = "Call the Hypothesis API from the comfort of your terminal",
-rename_all = "kebab-case",
-global_settings = & [AppSettings::DeriveDisplayOrder, AppSettings::ColoredHelp]
+use clap::CommandFactory;
+use clap::Parser;
+use clap_complete::Shell;
+use std::io::Write;
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::{fs, io};
+
+#[derive(Debug, Parser)]
+#[clap(
+    name = "hypothesis",
+    about = "Call the Hypothesis API from the comfort of your terminal"
 )]
 pub enum HypothesisCLI {
     /// Manage annotations
     Annotations {
-        #[structopt(subcommand)]
+        #[clap(subcommand)]
         cmd: AnnotationsCommand,
     },
     /// Manage groups
     Groups {
-        #[structopt(subcommand)]
+        #[clap(subcommand)]
         cmd: GroupsCommand,
     },
 
     /// Manage user profile
     Profile {
-        #[structopt(subcommand)]
+        #[clap(subcommand)]
         cmd: ProfileCommand,
     },
 
     /// Generate shell completions
     Complete {
-        #[structopt(possible_values = & Shell::variants())]
+        #[clap(value_enum)]
         shell: Shell,
     },
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
 pub enum AnnotationsCommand {
     /// Create a new annotation (TODO: add Target somehow)
     Create {
-        #[structopt(flatten)]
+        #[clap(flatten)]
         annotation: InputAnnotation,
         /// write created annotation to this file in JSON format
-        #[structopt(parse(from_os_str), short = "o", long)]
+        #[clap(short = 'o', long)]
         file: Option<PathBuf>,
     },
 
@@ -61,19 +58,19 @@ pub enum AnnotationsCommand {
     Update {
         /// unique ID of the annotation to update
         id: String,
-        #[structopt(flatten)]
+        #[clap(flatten)]
         annotation: InputAnnotation,
         /// write updated annotation to this file in JSON format
-        #[structopt(parse(from_os_str), short = "o", long)]
+        #[clap(short = 'o', long)]
         file: Option<PathBuf>,
     },
 
     /// Search for annotations with optional filters
     Search {
-        #[structopt(flatten)]
+        #[clap(flatten)]
         query: SearchQuery,
         /// json file to write search results to, writes to stdout if not given
-        #[structopt(parse(from_os_str), short = "o", long)]
+        #[clap(short = 'o', long)]
         file: Option<PathBuf>,
     },
     /// Fetch annotation by ID
@@ -81,7 +78,7 @@ pub enum AnnotationsCommand {
         /// unique ID of the annotation to fetch
         id: String,
         /// json file to write annotation to, writes to stdout if not given
-        #[structopt(parse(from_os_str), short = "o", long)]
+        #[clap(short = 'o', long)]
         file: Option<PathBuf>,
     },
     /// Delete annotation by ID
@@ -116,15 +113,15 @@ pub enum AnnotationsCommand {
     },
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
 pub enum GroupsCommand {
     /// Retrieve a list of applicable Groups, filtered by authority and target document (document_uri).
     /// Also retrieve user's private Groups.
     List {
-        #[structopt(flatten)]
+        #[clap(flatten)]
         filters: GroupFilters,
         /// json file to write filtered groups to, writes to stdout if not given
-        #[structopt(parse(from_os_str), short = "o", long)]
+        #[clap(short = 'o', long)]
         file: Option<PathBuf>,
     },
     /// Create a new, private group for the currently-authenticated user.
@@ -134,7 +131,7 @@ pub enum GroupsCommand {
         /// group description
         description: Option<String>,
         /// write created group to this file in JSON format
-        #[structopt(parse(from_os_str), short = "o", long)]
+        #[clap(short = 'o', long)]
         file: Option<PathBuf>,
     },
     /// Fetch a single Group resource.
@@ -142,10 +139,10 @@ pub enum GroupsCommand {
         /// unique Group ID
         id: String,
         /// Expand the organization, scope, or both
-        #[structopt(long, short)]
+        #[clap(long, short)]
         expand: Vec<Expand>,
         /// write group to this file in JSON format
-        #[structopt(parse(from_os_str), short = "o", long)]
+        #[clap(short = 'o', long)]
         file: Option<PathBuf>,
     },
     /// Update a Group resource.
@@ -153,13 +150,13 @@ pub enum GroupsCommand {
         /// unique Group ID
         id: String,
         /// new group name
-        #[structopt(long, short)]
+        #[clap(long, short)]
         name: Option<String>,
         /// new group description
-        #[structopt(long, short)]
+        #[clap(long, short)]
         description: Option<String>,
         /// write updated group to this file in JSON format
-        #[structopt(parse(from_os_str), short = "o", long)]
+        #[clap(short = 'o', long)]
         file: Option<PathBuf>,
     },
     /// Fetch a list of all members (users) in a group.
@@ -171,25 +168,25 @@ pub enum GroupsCommand {
         /// unique Group ID
         id: String,
         /// json file to write groups members to, writes to stdout if not given
-        #[structopt(parse(from_os_str), short = "o", long)]
+        #[clap(short = 'o', long)]
         file: Option<PathBuf>,
     },
     /// Remove yourself from a group.
     Leave { id: String },
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
 pub enum ProfileCommand {
     /// Fetch profile information for the currently-authenticated user.
     User {
         /// json file to write user profile to, writes to stdout if not given
-        #[structopt(parse(from_os_str), short = "o", long)]
+        #[clap(short = 'o', long)]
         file: Option<PathBuf>,
     },
     /// Fetch the groups for which the currently-authenticated user is a member.
     Groups {
         /// json file to write groups to, writes to stdout if not given
-        #[structopt(parse(from_os_str), short = "o", long)]
+        #[clap(short = 'o', long)]
         file: Option<PathBuf>,
     },
 }
@@ -353,7 +350,8 @@ impl HypothesisCLI {
             },
             Self::Complete { shell } => {
                 // Generates shell completions
-                Self::clap().gen_completions_to("hypothesis", shell, &mut io::stdout());
+                let mut cmd = HypothesisCLI::command();
+                clap_complete::generate(shell, &mut cmd, "hypothesis", &mut io::stdout());
             }
         }
         Ok(())
