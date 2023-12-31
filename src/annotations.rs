@@ -179,7 +179,6 @@ pub struct Dc {
     pub identifier: Vec<String>,
 }
 
-
 /// Full representation of an Annotation resource and applicable relationships.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Annotation {
