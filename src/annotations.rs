@@ -278,6 +278,9 @@ pub enum Selector {
     XPathSelector(HashMap<String, serde_json::Value>),
     DataPositionSelector(HashMap<String, serde_json::Value>),
     SvgSelector(HashMap<String, serde_json::Value>),
+    // See https://github.com/hypothesis/h/issues/7803:
+    PageSelector(HashMap<String, serde_json::Value>),
+    EPUBContentSelector(HashMap<String, serde_json::Value>),
 }
 
 impl Selector {
@@ -420,7 +423,7 @@ pub struct SearchQuery {
     /// Limit the results to annotations made in the specified group (by group ID).
     /// This can be specified multiple times to retrieve multiple groups.
     #[serde(skip_serializing_if = "is_default")]
-    #[cfg_attr(feature = "cli", clap(default_value = "", long))]
+    #[cfg_attr(feature = "cli", clap(long))]
     #[builder(setter(into))]
     pub group: Vec<String>,
     /// Limit the results to annotations tagged with the specified value.
