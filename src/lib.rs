@@ -389,6 +389,7 @@ impl Hypothesis {
             &format!("{}/search", API_URL),
             query
                 .into_iter()
+                .filter(|(_, v)| v.is_array() || !v.to_string().is_empty())
                 .flat_map(|(k, v)| {
                     if v.is_array() {
                         v.as_array()
