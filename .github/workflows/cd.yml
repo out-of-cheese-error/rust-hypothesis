@@ -29,18 +29,19 @@ jobs:
 
     steps:
       - name: Installing Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
           override: true
+
       - name: Checkout repository
         uses: actions/checkout@v2
+
       - name: Cargo build
-        uses: actions-rs/cargo@v1
+        uses: dtolnay/rust-toolchain@master
         with:
-          command: build
           toolchain: ${{ matrix.rust }}
-          args: --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Packaging final binary
         shell: bash
@@ -68,11 +69,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: publish
-          args: --token ${{ secrets.CARGO_API_KEY }} --allow-dirty
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo publish --token ${{ secrets.CARGO_API_KEY }} --allow-dirty
