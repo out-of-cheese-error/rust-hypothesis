@@ -270,8 +270,8 @@ pub enum Selector {
     /// > beginning of the ending selector, but not including it.
     /// [Web Annotation Data Model - Range Selector](https://www.w3.org/TR/annotation-model/#range-selector)
     /// NOTE - the Hypothesis API doesn't seem to follow this standard for RangeSelector so this just returns a HashMap for now
-    TextPositionSelector(TextPositionSelector),
     /// TODO: make Selectors into structs
+    TextPositionSelector(HashMap<String, serde_json::Value>),
     RangeSelector(HashMap<String, serde_json::Value>),
     FragmentSelector(HashMap<String, serde_json::Value>),
     CssSelector(HashMap<String, serde_json::Value>),
@@ -308,23 +308,6 @@ pub struct TextQuoteSelector {
     pub prefix: String,
     /// The snippet of text that occurs immediately after the text which is being selected.
     pub suffix: String,
-}
-
-/// >  This Selector describes a range of text by recording the start and end positions of the
-/// > selection in the stream. Position 0 would be immediately before the first character, position
-/// > 1 would be immediately before the second character, and so on. The start character is thus
-/// > included in the list, but the end character is not.
-///
-/// > For example, if the document was "abcdefghijklmnopqrstuvwxyz", the start was 4, and the end
-/// > was 7, then the selection would be "efg".
-/// [Web Annotation Data Model - Text Position Selector](https://www.w3.org/TR/annotation-model/#text-position-selector)
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct TextPositionSelector {
-    /// The starting position of the segment of text. The first character in the full text is
-    /// character position 0, and the character is included within the segment.
-    pub start: u64,
-    /// The end position of the segment of text. The character is not included within the segment.
-    pub end: u64,
 }
 
 #[cfg_attr(feature = "cli", derive(ValueEnum))]
