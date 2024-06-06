@@ -28,7 +28,7 @@ jobs:
         with:
           override: true
           components: rustfmt
-      - run: rustfmt --all -- --check
+      - run: cargo fmt --all --check
 
   clippy:
     name: Clippy
@@ -39,7 +39,7 @@ jobs:
         with:
           override: true
           components: clippy
-      - run: clippy
+      - run: cargo clippy
 #          args: -- -D warnings
 
 #  coverage:

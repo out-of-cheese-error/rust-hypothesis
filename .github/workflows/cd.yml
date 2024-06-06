@@ -37,8 +37,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Cargo build
-        uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
         run: cargo build --release --target ${{ matrix.target }}
