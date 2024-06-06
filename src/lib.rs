@@ -961,6 +961,26 @@ impl Hypothesis {
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 pub struct UserAccountID(pub String);
 
+impl UserAccountID {
+    pub fn to_username(&self) -> String {
+        if self.0.len() < 5 {
+            String::new()
+        } else {
+            self.0
+                .to_owned()
+                .split_off(5)
+                .split('@')
+                .next()
+                .unwrap_or("")
+                .to_owned()
+        }
+    }
+
+    pub fn to_user_id(&self) -> String {
+        self.0.to_owned()
+    }
+}
+
 impl FromStr for UserAccountID {
     type Err = ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
