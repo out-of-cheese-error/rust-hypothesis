@@ -28,18 +28,11 @@ jobs:
             binary_postfix: ".exe"
 
     steps:
-      - name: Installing Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.rust }}
-
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
-        run: cargo build --release --target ${{ matrix.target }}
+      - uses: actions/checkout@v2
+      - run: cargo build --release --target ${{ matrix.target }}
 
       - name: Packaging final binary
         shell: bash
