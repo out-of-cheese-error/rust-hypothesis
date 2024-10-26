@@ -271,6 +271,7 @@ pub enum Selector {
     /// [Web Annotation Data Model - Range Selector](https://www.w3.org/TR/annotation-model/#range-selector)
     /// NOTE - the Hypothesis API doesn't seem to follow this standard for RangeSelector so this just returns a HashMap for now
     /// TODO: make Selectors into structs
+    /// NOTE: keep up to date with the Hypothesis API https://github.com/hypothesis/client/blob/main/src/types/api.ts
     TextPositionSelector(HashMap<String, serde_json::Value>),
     RangeSelector(HashMap<String, serde_json::Value>),
     FragmentSelector(HashMap<String, serde_json::Value>),
@@ -281,6 +282,7 @@ pub enum Selector {
     // See https://github.com/hypothesis/h/issues/7803:
     PageSelector(HashMap<String, serde_json::Value>),
     EPUBContentSelector(HashMap<String, serde_json::Value>),
+    MediaTimeSelector(HashMap<String, serde_json::Value>),
 }
 
 impl Selector {
